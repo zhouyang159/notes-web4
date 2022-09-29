@@ -24,13 +24,12 @@ const Detail = (props) => {
 	const getTextChangeHandler = (quill) => {
 		return () => {
 			let title = '';
-			let str = JSON.stringify(quill.getText(0, 200)).slice(1);
-			str = str.replace(/^[\\n]+/g, '');
+			let str = JSON.stringify(quill.getText(0, 200));
 
 			if (str.indexOf('\\n') !== -1 && str.indexOf('\\n') < 10) {
-				title = str.slice(0, str.indexOf('\\n'));
+				title = str.slice(1, str.indexOf('\\n'));
 			} else {
-				title = str.slice(0, 10);
+				title = str.slice(1, 10);
 			}
 
 			if (title === '') {
