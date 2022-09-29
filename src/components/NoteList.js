@@ -22,17 +22,26 @@ const getItemStyle = (isDragging, draggableStyle, active) => {
 	}
 
 	return {
-		padding: "16px 8px",
-		borderBottom: "1px solid lightgray",
 		background: background,
-		borderRadius: "3px",
-		cursor: "default",
-
 		...draggableStyle
 	}
 };
 
-
+const DraggableItem = styled.div`
+	padding: 16px 8px;
+	border-bottom: 1px solid lightgray;
+	border-radius: 3px;
+	cursor: default;
+	.title {
+		line-height: normal;
+		font-weight: bold;
+		font-size: 18px;
+	}
+	.date {
+		line-height: normal;
+		font-size: 14px;
+	}
+`;
 
 const ContextMenu = styled.div`
 	display: none;
@@ -61,17 +70,6 @@ const MenuItemContent = styled.div`
 	}
 `;
 
-const DraggableItem = styled.div`
-	.title {
-		line-height: normal;
-		font-weight: bold;
-		font-size: 18px;
-	}
-	.date {
-		line-height: normal;
-		font-size: 14px;
-	}
-`;
 
 const ConfirmContent = styled.div`
 	text-align: center;
@@ -157,6 +155,11 @@ const NoteList = (props) => {
 		} else {
 			return [find.id];
 		}
+	}
+
+	const hideContextMenu = () => {
+		document.getElementById("Menu").style.display = 'none';
+		document.getElementById("Menu2").style.display = 'none';
 	}
 
 	return <div className="NoteList">
@@ -286,6 +289,8 @@ const NoteList = (props) => {
 													handleClickLiveNote(note);
 												}}
 												onContextMenu={(e) => {
+													hideContextMenu();
+
 													handleClickLiveNote(note);
 													setCurNote(note);
 
@@ -312,31 +317,40 @@ const NoteList = (props) => {
 			</SubMenu>
 
 			<SubMenu key="sub2" icon={<DeleteOutlined />} title="Trash">
-				{deletedNoteList.map((note) => {
-					return <Menu.Item key={note.id}
-						onClick={() => {
-							handleClickDeletedNote(note);
-						}}
-						onContextMenu={(e) => {
-							handleClickDeletedNote(note);
-							setCurNote(note);
+				<div
+					style={getListStyle(false)}
+				>
+					{deletedNoteList.map((note) => {
+						return <DraggableItem
+							style={getItemStyle(
+								false,
+								{},
+								note.active
+							)}
+							onClick={() => {
+								handleClickDeletedNote(note);
+							}}
+							onContextMenu={(e) => {
+								hideContextMenu();
 
-							e.preventDefault();
-							const clickX = e.clientX;
-							const clickY = e.clientY;
-							const Menu = document.getElementById("Menu2");
-							Menu.style.display = "block";
-							Menu.style.position = "absolute";
-							Menu.style.left = `${clickX}px`;
-							Menu.style.top = `${clickY}px`;
-						}}
-					>
-						<MenuItemContent>
+								handleClickDeletedNote(note);
+								setCurNote(note);
+
+								e.preventDefault();
+								const clickX = e.clientX;
+								const clickY = e.clientY;
+								const Menu = document.getElementById("Menu2");
+								Menu.style.display = "block";
+								Menu.style.position = "absolute";
+								Menu.style.left = `${clickX}px`;
+								Menu.style.top = `${clickY}px`;
+							}}
+						>
 							<div className='title'>{note.title}</div>
-							<div className='date'>{note.updateTime.format("yyyy/MM/DD")}</div>
-						</MenuItemContent>
-					</Menu.Item>
-				})}
+							<div className='date'>{note.updateTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+						</DraggableItem>
+					})}
+				</div>
 			</SubMenu>
 		</Menu>
 	</div >

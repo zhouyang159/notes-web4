@@ -236,51 +236,51 @@ const Main = (props, ref) => {
 			</NoteListContainer>
 			<div>
 				{
-					getActiveNote() &&
-					<Detail
-						newId={newId}
-						curNote={getActiveNote()}
-						createOrUpdateNote={(note) => {
-							let findIdx = -1;
-							liveNoteList.find((item, index) => {
-								if (item.id === note.id) {
-									findIdx = index;
-									return true;
-								}
-							});
+					// getActiveNote() &&
+					// <Detail
+					// 	newId={newId}
+					// 	curNote={getActiveNote()}
+					// 	createOrUpdateNote={(note) => {
+					// 		let findIdx = -1;
+					// 		liveNoteList.find((item, index) => {
+					// 			if (item.id === note.id) {
+					// 				findIdx = index;
+					// 				return true;
+					// 			}
+					// 		});
 
-							let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
-								item.number = index;
-								item.active = false;
+					// 		let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
+					// 			item.number = index;
+					// 			item.active = false;
 
-								if (item.id === note.id) {
-									return {
-										...item,
-										...note,
-										active: true,
-									}
-								}
-								return item;
-							})
+					// 			if (item.id === note.id) {
+					// 				return {
+					// 					...item,
+					// 					...note,
+					// 					active: true,
+					// 				}
+					// 			}
+					// 			return item;
+					// 		})
 
 
-							console.log(newNoteList, 333);
-							setLiveNoteList(newNoteList);
+					// 		console.log(newNoteList, 333);
+					// 		setLiveNoteList(newNoteList);
 
-							clearTimeout(timer);
-							timer = setTimeout(() => {
-								if (note.id === newId) {
-									// create note
-									setNewId(null);
-									createNoteToServer(note);
-								} else {
-									// update note
-									updateNoteToServer(note);
-								}
-							}, 700);
-						}}
-					>
-					</Detail>
+					// 		clearTimeout(timer);
+					// 		timer = setTimeout(() => {
+					// 			if (note.id === newId) {
+					// 				// create note
+					// 				setNewId(null);
+					// 				createNoteToServer(note);
+					// 			} else {
+					// 				// update note
+					// 				updateNoteToServer(note);
+					// 			}
+					// 		}, 700);
+					// 	}}
+					// >
+					// </Detail>
 				}
 			</div>
 		</Body>

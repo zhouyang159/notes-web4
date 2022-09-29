@@ -7,7 +7,7 @@ import moment from 'moment';
 
 const DetailContainer = styled.div`
 	height: 100%;
-	width: 700px;
+	width: 698px;
 `;
 const EditorContainer = styled.div`
 	height: 93%;
@@ -62,6 +62,7 @@ const Detail = (props) => {
 
 	useEffect(() => {
 		let toolbarOptions = [
+			[{ 'header': [1, 2, 3, 4, 5, 6, false] }],
 			['bold', 'strike'],        // toggled buttons
 			['blockquote', 'code-block'],
 
@@ -72,7 +73,6 @@ const Detail = (props) => {
 			// [{ 'direction': 'rtl' }],                         // text direction
 
 			// [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
-			// [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
 
 			[{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
 			// [{ 'font': [] }],
