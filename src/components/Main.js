@@ -1,12 +1,12 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
-import axios from 'axios';
-import { Button, Popconfirm, message } from 'antd';
-import { SyncOutlined } from '@ant-design/icons';
-import styled from 'styled-components';
-import { v4 as uuidv4 } from 'uuid';
-import moment from 'moment';
-import NoteList from './NoteList';
-import Detail from './Detail';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import axios from "axios";
+import { Button, Popconfirm, message } from "antd";
+import { SyncOutlined } from "@ant-design/icons";
+import styled from "styled-components";
+import { v4 as uuidv4 } from "uuid";
+import moment from "moment";
+import NoteList from "./NoteList";
+import Detail from "./Detail";
 
 
 const Container = styled.div`
@@ -45,7 +45,7 @@ const Main = (props, ref) => {
 	}));
 	const { logOut } = props;
 	const [username] = useState(() => {
-		return localStorage.getItem('username');
+		return localStorage.getItem("username");
 	});
 	const [loading, setLoading] = useState(false);
 	const [newId, setNewId] = useState(null);
@@ -55,7 +55,7 @@ const Main = (props, ref) => {
 	const getNotes = (cb = () => { }) => {
 		setLoading(true);
 		axios
-			.get('/note/findAll')
+			.get("/note/findAll")
 			.then(({ status, data, msg }) => {
 				let list = data.map((note) => {
 					return {
@@ -86,9 +86,9 @@ const Main = (props, ref) => {
 			content: content,
 		}
 
-		axios.post('/note', data).then((res) => {
+		axios.post("/note", data).then((res) => {
 			if (res.data) {
-				message.success('add note');
+				message.success("add note");
 			}
 		}).finally(() => {
 			cb();
@@ -104,7 +104,7 @@ const Main = (props, ref) => {
 
 		setLoading(true);
 		axios
-			.put('/note/reorder', data)
+			.put("/note/reorder", data)
 			.then((res) => {
 				if (successText) {
 					message.success(successText);
@@ -112,7 +112,7 @@ const Main = (props, ref) => {
 			})
 			.catch((err) => {
 				console.log(err);
-				message.error('update fail');
+				message.error("update fail");
 			})
 			.finally(() => {
 				cb();
@@ -150,7 +150,7 @@ const Main = (props, ref) => {
 
 	return <Container>
 		<H1>
-			<div><span>Notes</span> {loading && <SyncOutlined spin style={{ fontSize: '16px' }} />}</div>
+			<div><span>Notes</span> {loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}</div>
 			<div>
 				<span>{username}</span>
 				<Button
@@ -175,12 +175,12 @@ const Main = (props, ref) => {
 						let newArr = [
 							{
 								id: newId,
-								title: 'New Note',
-								content: '',
+								title: "New Note",
+								content: "",
 								number: 0,
 								createTime: moment(),
 								updateTime: moment(),
-								username: localStorage.getItem('username'),
+								username: localStorage.getItem("username"),
 								deleted: 0,
 								active: false,
 							},
@@ -222,8 +222,8 @@ const Main = (props, ref) => {
 			</div>
 		</H1>
 		<Body onClick={() => {
-			document.getElementById("Menu").style.display = 'none';
-			document.getElementById("Menu2").style.display = 'none';
+			document.getElementById("Menu").style.display = "none";
+			document.getElementById("Menu2").style.display = "none";
 		}}>
 			<NoteListContainer>
 				<NoteList

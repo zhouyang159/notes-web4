@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { message, Menu, Modal } from 'antd';
-import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
-import styled from 'styled-components';
-import axios from 'axios';
+import React, { useState } from "react";
+import { message, Menu, Modal } from "antd";
+import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import styled from "styled-components";
+import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
-import moment from 'moment';
+import moment from "moment";
 
 const { SubMenu } = Menu;
 
@@ -17,7 +17,7 @@ const getListStyle = isDraggingOver => ({
 const activeBackground = "#bfde3f";
 
 const getItemStyle = (isDragging, draggableStyle, active) => {
-	let background = '';
+	let background = "";
 	if (isDragging) {
 		background = activeBackground;
 	} else if (active) {
@@ -50,11 +50,11 @@ const DraggableItem = styled.div`
 		line-height: normal;
 		font-size: 14px;
 		color: ${(props) => {
-			if (props.dangerText) {
-				return "red";
-			}
-			return "gray";
-		}};
+		if (props.dangerText) {
+			return "red";
+		}
+		return "gray";
+	}};
 	}
 `;
 
@@ -94,9 +94,9 @@ const NoteList = (props) => {
 			// newId is null represent that we already create a new note in DB, so we can delete it from DB
 			//delete server side empty note.
 			liveNoteList.forEach(item => {
-				if (item.title === 'New Note') {
+				if (item.title === "New Note") {
 					axios.delete(`/note/${item.id}`).catch((err) => {
-						message.error('delete note error');
+						message.error("delete note error");
 						console.log(err);
 					});
 				}
@@ -104,7 +104,7 @@ const NoteList = (props) => {
 		}
 
 		setLiveNoteList((pre) => {
-			return pre.filter((item) => item.title !== 'New Note').map((item) => {
+			return pre.filter((item) => item.title !== "New Note").map((item) => {
 				item.active = false;
 				return item;
 			});
@@ -118,7 +118,7 @@ const NoteList = (props) => {
 	}
 
 	const handleClickLiveNote = (note) => {
-		if (note.title === 'New Note') {
+		if (note.title === "New Note") {
 			return;
 		}
 
@@ -160,21 +160,21 @@ const NoteList = (props) => {
 	}
 
 	const hideContextMenu = () => {
-		document.getElementById("Menu").style.display = 'none';
-		document.getElementById("Menu2").style.display = 'none';
+		document.getElementById("Menu").style.display = "none";
+		document.getElementById("Menu2").style.display = "none";
 	}
 
 	return <div className="NoteList">
-		<ContextMenu id='Menu'>
+		<ContextMenu id="Menu">
 			<div
-				className='item'
+				className="item"
 				onClick={() => {
-					if (curNote.title === 'New Note') {
+					if (curNote.title === "New Note") {
 						axios.delete(`/note/${curNote.id}`).catch((err) => {
 							console.log(err);
 						});
 						setLiveNoteList(pre => {
-							return pre.filter(item => item.title !== 'New Note');
+							return pre.filter(item => item.title !== "New Note");
 						});
 					} else {
 						axios.delete(`/note/fake/${curNote.id}`).then(() => {
@@ -195,39 +195,39 @@ const NoteList = (props) => {
 						});
 					}
 					setCurNote(null);
-					document.getElementById("Menu").style.display = 'none';
+					document.getElementById("Menu").style.display = "none";
 				}}
 			>
 				move to trash
 			</div>
 		</ContextMenu>
-		<ContextMenu id='Menu2'>
+		<ContextMenu id="Menu2">
 			<div
-				className='item'
+				className="item"
 				onClick={() => {
 					Modal.confirm({
 						icon: <ExclamationCircleOutlined />,
 						content: <ConfirmContent>
-							<div className='title' >Are you sure you want to delete the note permanently?</div>
-							<div className='subTitle'>You cannot undo this action.</div>
+							<div className="title" >Are you sure you want to delete the note permanently?</div>
+							<div className="subTitle">You cannot undo this action.</div>
 						</ConfirmContent>,
 						centered: true,
-						okText: 'Delete',
+						okText: "Delete",
 						okButtonProps: { danger: true },
-						cancelText: 'Cancel',
+						cancelText: "Cancel",
 						onOk: () => {
 							axios
 								.delete(`/note/${curNote.id}`)
 								.then(() => {
-									message.success('delete success');
+									message.success("delete success");
 									getNotes();
 								})
 								.catch(() => {
-									message.error('something wrong');
+									message.error("something wrong");
 								});
 
 							setCurNote(null);
-							document.getElementById("Menu2").style.display = 'none';
+							document.getElementById("Menu2").style.display = "none";
 						}
 					});
 				}}
@@ -235,7 +235,7 @@ const NoteList = (props) => {
 				delete
 			</div>
 			<div
-				className='item'
+				className="item"
 				onClick={() => {
 					let newNote = {
 						...curNote,
@@ -243,14 +243,14 @@ const NoteList = (props) => {
 					}
 					updateNoteToServer(newNote, getNotes);
 					setCurNote(null);
-					document.getElementById("Menu2").style.display = 'none';
+					document.getElementById("Menu2").style.display = "none";
 				}}
 			>
 				recover
 			</div>
 		</ContextMenu>
 		<Menu
-			defaultOpenKeys={['sub1', 'sub2']}
+			defaultOpenKeys={["sub1", "sub2"]}
 			mode="inline"
 			selectedKeys={getSelectedKeys()}
 		>
@@ -278,7 +278,7 @@ const NoteList = (props) => {
 								content: JSON.stringify(note.content),
 							}
 						});
-						axios.put('/note/updateLiveNoteList', ans);
+						axios.put("/note/updateLiveNoteList", ans);
 					}}
 				>
 					<Droppable droppableId="droppable">
@@ -319,8 +319,8 @@ const NoteList = (props) => {
 													Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
 												}}
 											>
-												<div className='title'>{note.title}</div>
-												<div className='date'>{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+												<div className="title">{note.title}</div>
+												<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
 											</DraggableItem>
 										)}
 									</Draggable>
@@ -371,8 +371,8 @@ const NoteList = (props) => {
 								Menu.style.top = `${clickY}px`;
 							}}
 						>
-							<div className='title'>{note.title}</div>
-							<div className='date'>{remainingDay} days</div>
+							<div className="title">{note.title}</div>
+							<div className="date">{remainingDay} days</div>
 						</DraggableItem>
 					})}
 				</div>

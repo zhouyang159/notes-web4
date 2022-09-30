@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
-import Quill from 'quill';
-import 'quill/dist/quill.snow.css'
-import moment from 'moment';
+import React, { useEffect, useRef, useState } from "react";
+import styled from "styled-components";
+import Quill from "quill";
+import "quill/dist/quill.snow.css"
+import moment from "moment";
 
 
 const DetailContainer = styled.div`
@@ -23,17 +23,17 @@ const Detail = (props) => {
 
 	const getTextChangeHandler = (quill) => {
 		return () => {
-			let title = '';
+			let title = "";
 			let str = JSON.stringify(quill.getText(0, 200));
 
-			if (str.indexOf('\\n') !== -1 && str.indexOf('\\n') < 10) {
-				title = str.slice(1, str.indexOf('\\n'));
+			if (str.indexOf("\\n") !== -1 && str.indexOf("\\n") < 10) {
+				title = str.slice(1, str.indexOf("\\n"));
 			} else {
 				title = str.slice(1, 10);
 			}
 
-			if (title === '') {
-				title = 'New Note';
+			if (title === "") {
+				title = "New Note";
 			}
 
 			let newNote = {
@@ -53,47 +53,47 @@ const Detail = (props) => {
 		}
 		if (newId === null) {
 			// when note create finish, we bind a new handler to quill
-			quill.off('text-change', textChangeHandler);
+			quill.off("text-change", textChangeHandler);
 			let newHandler = getTextChangeHandler(quill);
-			quill.on('text-change', newHandler);
+			quill.on("text-change", newHandler);
 			setTextChangeHandler(() => newHandler);
 		}
 	}, [newId]);
 
 	useEffect(() => {
 		let toolbarOptions = [
-			[{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-			['bold', 'strike'],        // toggled buttons
-			['blockquote', 'code-block'],
+			[{ "header": [1, 2, 3, 4, 5, 6, false] }],
+			["bold", "strike"],        // toggled buttons
+			["blockquote", "code-block"],
 
-			// [{ 'header': 1 }, { 'header': 2 }],               // custom button values
-			[{ 'list': 'ordered' }, { 'list': 'bullet' }],
-			// [{ 'script': 'sub' }, { 'script': 'super' }],      // superscript/subscript
-			[{ 'indent': '-1' }, { 'indent': '+1' }],          // outdent/indent
-			// [{ 'direction': 'rtl' }],                         // text direction
+			// [{ "header": 1 }, { "header": 2 }],               // custom button values
+			[{ "list": "ordered" }, { "list": "bullet" }],
+			// [{ "script": "sub" }, { "script": "super" }],      // superscript/subscript
+			[{ "indent": "-1" }, { "indent": "+1" }],          // outdent/indent
+			// [{ "direction": "rtl" }],                         // text direction
 
-			// [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+			// [{ "size": ["small", false, "large", "huge"] }],  // custom dropdown
 
-			[{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
-			// [{ 'font': [] }],
-			// [{ 'align': [] }],
+			[{ "color": [] }, { "background": [] }],          // dropdown with defaults from theme
+			// [{ "font": [] }],
+			// [{ "align": [] }],
 
-			['clean']                                         // remove formatting button
+			["clean"]                                         // remove formatting button
 		];
 
-		let quill = new Quill('#editor-container', {
+		let quill = new Quill("#editor-container", {
 			modules: {
 				toolbar: toolbarOptions,
 			},
-			placeholder: 'type something here...',
-			theme: 'snow',  // or 'bubble'，
+			placeholder: "type something here...",
+			theme: "snow",  // or "bubble"，
 		});
 		setQuill(quill);
 		quill.setContents(curNote.content);
 		quill.focus();
 
 		let handler = getTextChangeHandler(quill);
-		quill.on('text-change', handler);
+		quill.on("text-change", handler);
 		setTextChangeHandler(() => handler);
 
 		if (curNote.deleted === 1) {

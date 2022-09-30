@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './App.css';
-import axios from 'axios';
-import { message } from 'antd';
-import SignInPanel from './components/SignInPanel';
-import Main from './components/Main';
+import React, { useState, useEffect, useRef } from "react";
+import "./App.css";
+import axios from "axios";
+import { message } from "antd";
+import SignInPanel from "./components/SignInPanel";
+import Main from "./components/Main";
 
 
-const sessionKey = `${localStorage.getItem('username')}_${new Date().getTime()}`;
+const sessionKey = `${localStorage.getItem("username")}_${new Date().getTime()}`;
 axios.defaults.headers.common["sessionKey"] = sessionKey;
-axios.defaults.baseURL = '/api';
+axios.defaults.baseURL = "/api";
 
 
 const App = () => {
 	const didMount = useRef(false);
 	const MainRef = useRef(null);
-	
+
 	const [signIn, setSignIn] = useState(() => {
-		let token = localStorage.getItem('token');
+		let token = localStorage.getItem("token");
 		if (token) {
 			axios.defaults.headers.common["token"] = token;
 			return true;
@@ -34,10 +34,10 @@ const App = () => {
 			if (status !== 0) {
 				message.error(msg);
 				if (status === 6 || status === 7) {
-					localStorage.removeItem('token');
+					localStorage.removeItem("token");
 					setSignIn(false);
 				}
-	
+
 				return Promise.reject(response);
 			}
 			return response.data;
@@ -53,9 +53,9 @@ const App = () => {
 		// if (signIn === false) return;
 
 		// let hostname_port = "";
-		// if(process.env.NODE_ENV === 'development') {
+		// if(process.env.NODE_ENV === "development") {
 		// 	hostname_port = "http://localhost:8080";
-		// } else if (process.env.NODE_ENV === 'production') {
+		// } else if (process.env.NODE_ENV === "production") {
 		// 	hostname_port = window.location.hostname + ":" + window.location.port;
 		// }
 
@@ -65,7 +65,7 @@ const App = () => {
 		// 	console.log("WebSocket open");
 		// };
 		// socket.onmessage = function (msg) {
-		// 	if (msg.data === 'update') {
+		// 	if (msg.data === "update") {
 		// 		MainRef.current.refresh();
 		// 	}
 		// };
@@ -85,7 +85,7 @@ const App = () => {
 		return <Main
 			ref={MainRef}
 			logOut={() => {
-				localStorage.removeItem('token');
+				localStorage.removeItem("token");
 				setSignIn(false);
 				message.success("log out");
 			}}

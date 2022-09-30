@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './App.css';
-import axios from 'axios';
-import { message, Button } from 'antd';
-import SignInPanel from './components/SignInPanel';
-import Main from './components/Main';
-import 'animate.css';
-import styled from 'styled-components';
+import React, { useState, useEffect, useRef } from "react";
+import "./App.css";
+import axios from "axios";
+import { message, Button } from "antd";
+import SignInPanel from "./components/SignInPanel";
+import Main from "./components/Main";
+import "animate.css";
+import styled from "styled-components";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 // import type { Quote as QuoteType } from "../types";
 
@@ -13,10 +13,10 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 // const App = () => {
 
 // 	const handleOnclick = () => {
-// 		const element = document.querySelector('.my-element');
-// 		element.classList.add('animate__animated', 'animate__slideOutUp');
+// 		const element = document.querySelector(".my-element");
+// 		element.classList.add("animate__animated", "animate__slideOutUp");
 
-// 		element.addEventListener('animationend', () => {
+// 		element.addEventListener("animationend", () => {
 // 			// do something
 // 			console.log("do something");
 // 		});
@@ -26,7 +26,7 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 // 		App
 // 		<Button onClick={handleOnclick}>animate</Button>
 
-// 		<div className='my-element'>test animate</div>
+// 		<div className="my-element">test animate</div>
 // 	</div>
 // };
 
@@ -108,7 +108,7 @@ function QuoteApp() {
 
 		element.style.transition = "all 0.4s";
 		element.style.transitionTimingFunction = "ease";
-		element.style.overflow = 'hidden';
+		element.style.overflow = "hidden";
 
 		setTimeout(() => {
 			element.style.height = 0;
@@ -130,9 +130,9 @@ function QuoteApp() {
 			});
 		}, 1300);
 
-		// element.classList.add('animate__animated', 'animate__slideOutLeft');
+		// element.classList.add("animate__animated", "animate__slideOutLeft");
 
-		// element.addEventListener('animationend', () => {
+		// element.addEventListener("animationend", () => {
 		// 	// do something
 		// 	console.log("do something");
 		// 	setState((pre) => {
