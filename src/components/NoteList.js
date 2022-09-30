@@ -4,34 +4,43 @@ import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@an
 import styled from 'styled-components';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import moment from 'moment';
 
 const { SubMenu } = Menu;
 
 const getListStyle = isDraggingOver => ({
-	background: isDraggingOver ? "#7ec1ff" : "",
+	background: isDraggingOver ? "#" : "",
 	padding: "8px",
 	width: 250
 });
 
+const activeBackground = "#bfde3f";
+
 const getItemStyle = (isDragging, draggableStyle, active) => {
 	let background = '';
 	if (isDragging) {
-		background = "#02e8be";
+		background = activeBackground;
 	} else if (active) {
-		background = "#bfde3f";
+		background = activeBackground;
 	}
 
 	return {
 		background: background,
-		...draggableStyle
+		...draggableStyle,
+		cursor: "default",
 	}
 };
 
 const DraggableItem = styled.div`
-	padding: 16px 8px;
+	padding: 12px 8px;
 	border-bottom: 1px solid lightgray;
 	border-radius: 3px;
-	cursor: default;
+	height: 66px;
+	overflow: hidden;
+	&:hover{
+		transition: all 0.2s ;
+		background: ${props => activeBackground};
+	}
 	.title {
 		line-height: normal;
 		font-weight: bold;
@@ -40,36 +49,29 @@ const DraggableItem = styled.div`
 	.date {
 		line-height: normal;
 		font-size: 14px;
+		color: ${(props) => {
+			if (props.dangerText) {
+				return "red";
+			}
+			return "gray";
+		}};
 	}
 `;
 
 const ContextMenu = styled.div`
 	display: none;
 	background-color: #f4f4f4;
-	width: 150px;
 	z-index: 10;
-	padding: 10px;
 	border-radius: 5px;
 	.item {
-		padding: 3px;
-		cursor: pointer;
 		&:hover{
 			background-color: bisque;
 		}
+		border-radius: 5px;
+		padding: 6px;
+		cursor: pointer;
 	}
 `;
-const MenuItemContent = styled.div`
-	line-height: 17px;
-	.title {
-		font-weight: bold;
-		font-size: 16px;
-	}
-	.date {
-		font-weight: normal;
-		font-size: 12px;
-	}
-`;
-
 
 const ConfirmContent = styled.div`
 	text-align: center;
@@ -176,7 +178,20 @@ const NoteList = (props) => {
 						});
 					} else {
 						axios.delete(`/note/fake/${curNote.id}`).then(() => {
-							getNotes();
+							let divId = curNote.id.substring(0, curNote.id.indexOf("-"));
+							const element = document.getElementById(divId);
+							element.style.background = "red";
+
+							setTimeout(() => {
+								element.style.transition = "all 0.4s";
+								element.style.padding = 0;
+								element.style.height = 0;
+								element.style.border = 0;
+							}, 10);
+
+							setTimeout(() => {
+								getNotes();
+							}, 400);
 						});
 					}
 					setCurNote(null);
@@ -235,7 +250,7 @@ const NoteList = (props) => {
 			</div>
 		</ContextMenu>
 		<Menu
-			defaultOpenKeys={['sub1']}
+			defaultOpenKeys={['sub1', 'sub2']}
 			mode="inline"
 			selectedKeys={getSelectedKeys()}
 		>
@@ -277,6 +292,7 @@ const NoteList = (props) => {
 									return <Draggable key={note.id} draggableId={note.id} index={index}>
 										{(provided, snapshot) => (
 											<DraggableItem
+												id={note.id.substring(0, note.id.indexOf("-"))}
 												ref={provided.innerRef}
 												{...provided.draggableProps}
 												{...provided.dragHandleProps}
@@ -304,7 +320,7 @@ const NoteList = (props) => {
 												}}
 											>
 												<div className='title'>{note.title}</div>
-												<div className='date'>{note.updateTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+												<div className='date'>{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
 											</DraggableItem>
 										)}
 									</Draggable>
@@ -321,7 +337,16 @@ const NoteList = (props) => {
 					style={getListStyle(false)}
 				>
 					{deletedNoteList.map((note) => {
+						let remainingDay = moment().diff(note.deleteTime, "days");
+
+						let dangerText = false;
+						if (remainingDay < 3) {
+							dangerText = true;
+						}
+
 						return <DraggableItem
+							key={note.id}
+							dangerText={dangerText}
 							style={getItemStyle(
 								false,
 								{},
@@ -347,7 +372,7 @@ const NoteList = (props) => {
 							}}
 						>
 							<div className='title'>{note.title}</div>
-							<div className='date'>{note.updateTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+							<div className='date'>{remainingDay} days</div>
 						</DraggableItem>
 					})}
 				</div>
