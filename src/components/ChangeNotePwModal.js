@@ -13,52 +13,56 @@ const ChangeNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSucc
       maskClosable={false}
       footer={<div>
          <Button onClick={closeModal}>Cancel</Button>
-         <Button type="primary" onClick={() => {
-            if (oldPassword === "") {
-               message.warn("please check");
-               return;
-            }
-            if (password1 !== password2) {
-               message.warn("please check");
-               return;
-            }
-            if (password1 === "" || password2 === "") {
-               // cancel note password
-               new Promise((resolve, reject) => {
-                  axios
-                     .post(`/user/validateNotePassword/${oldPassword}`)
-                     .then((res) => {
-                        resolve();
-                     })
-               })
-                  .then(() => {
+         <Button type="primary"
+            onClick={() => {
+               if (oldPassword === "") {
+                  message.warn("please check");
+                  return;
+               }
+               if (password1 !== password2) {
+                  message.warn("please check");
+                  return;
+               }
+               if (password1 === "") {
+                  // cancel note password
+                  new Promise((resolve, reject) => {
                      axios
-                        .post(`/user/setNotePassword/null`) // set password to null to cancel password
+                        .post(`/user/validateNotePassword/${oldPassword}`)
                         .then((res) => {
-                           message.success("cancel note password");
-                           onSuccess();
-                        });
+                           resolve();
+                        })
                   })
-            } else {
-               // change password
-               new Promise((resolve, reject) => {
-                  axios
-                     .post(`/user/validateNotePassword/${oldPassword}`)
-                     .then((res) => {
-                        resolve();
-                     })
-               })
-                  .then(() => {
+                     .then(() => {
+                        axios
+                           .post(`/user/setNotePassword/null`) // set password to null to cancel password
+                           .then((res) => {
+                              message.success("cancel note password");
+                              onSuccess();
+                           });
+                     });
+               } else {
+                  // change password
+                  new Promise((resolve, reject) => {
                      axios
-                        .post(`/user/setNotePassword/${password1}`)
+                        .post(`/user/validateNotePassword/${oldPassword}`)
                         .then((res) => {
-                           message.success("change note password success");
-                           onSuccess();
-                        });
+                           resolve();
+                        })
                   })
-            }
+                     .then(() => {
+                        axios
+                           .post(`/user/setNotePassword/${password1}`)
+                           .then((res) => {
+                              message.success("change note password success");
+                              onSuccess();
+                           });
+                     })
+               }
 
-         }}>Change Password</Button>
+            }}
+         >
+            Change Password
+         </Button>
       </div>}
    >
       <Form

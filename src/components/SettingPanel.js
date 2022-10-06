@@ -4,7 +4,7 @@ import SetNotePwModal from "./SetNotePwModal";
 import ChangeNotePwModal from "./ChangeNotePwModal";
 
 
-const SettingPanel = ({ profile, getProfile, isModalOpen = false, closeModal = () => { } }) => {
+const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, closeModal = () => { } }) => {
    const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
    const [isChangeNotePwModalOpen, setIsChangeNotePwModalOpen] = useState(false);
 
@@ -87,6 +87,7 @@ const SettingPanel = ({ profile, getProfile, isModalOpen = false, closeModal = (
                setTimeout(() => {
                   setIsChangeNotePwModalOpen(false);
                   getProfile();
+                  getNotes();
                }, 600);
             }}
          ></ChangeNotePwModal>

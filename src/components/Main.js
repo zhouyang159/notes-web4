@@ -1,13 +1,14 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef } from "react";
 import axios from "axios";
-import { Button, message, Dropdown, Menu, Space } from "antd";
-import { SyncOutlined, EllipsisOutlined } from "@ant-design/icons";
+import { Button, message, Dropdown, Menu } from "antd";
+import { SyncOutlined, EllipsisOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import NoteList from "./NoteList";
 import Detail from "./Detail";
 import SettingPanel from "./SettingPanel";
+import AskNotePasswordModal from "./AskNotePasswordModal";
 
 
 const Container = styled.div`
@@ -54,6 +55,7 @@ const Main = (props, ref) => {
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
+	const AskNotePasswordModalRef = useRef();
 	const [profile, setProfile] = useState();
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
@@ -131,7 +133,7 @@ const Main = (props, ref) => {
 			});
 	}
 
-	const getProfile = () => {
+	const getProfile = useCallback(() => {
 		axios
 			.get(`/user/${username}/profile`)
 			.then((res) => {
@@ -144,12 +146,7 @@ const Main = (props, ref) => {
 				}
 				setProfile(profile);
 			});
-	}
-
-	useEffect(() => {
-		getNotes();
-		getProfile();
-	}, []);
+	}, [username]);
 
 	const canNew = () => {
 		let can = true;
@@ -166,6 +163,33 @@ const Main = (props, ref) => {
 		let ans = [...liveNoteList, ...deletedNoteList].find(item => item.active);
 		return ans;
 	}
+
+	const validateNotePassword = () => {
+		return new Promise((resolve, reject) => {
+			AskNotePasswordModalRef.current.open((password) => {
+				axios
+					.post(`/user/validateNotePassword/${password}`)
+					.then((res) => {
+						if (res.status === 0) {
+							AskNotePasswordModalRef.current.close();
+							setProfile((pre) => {
+								return {
+									...pre,
+									lockNote: false,
+								}
+							});
+							resolve(res);
+						}
+					});
+			});
+		});
+	}
+
+	useEffect(() => {
+		// did mount
+		getNotes();
+		getProfile();
+	}, [getProfile]);
 
 
 	return <>
@@ -238,6 +262,27 @@ const Main = (props, ref) => {
 					>
 						new
 					</Button>
+					<Button size="small" shape="circle" icon={
+						profile?.lockNote ?
+							<LockOutlined
+								onClick={async () => {
+									await validateNotePassword();
+									message.success("unlock note!");
+								}}
+							></LockOutlined> :
+							<UnlockOutlined
+								onClick={() => {
+									setProfile((pre) => {
+										return {
+											...pre,
+											lockNote: true,
+										}
+									});
+									message.info("lock");
+								}}
+							></UnlockOutlined>
+					} />
+					&nbsp;
 					<Dropdown
 						overlay={
 							<Menu
@@ -267,7 +312,6 @@ const Main = (props, ref) => {
 					<NoteList
 						profile={profile}
 						getProfile={getProfile}
-						setProfile={setProfile}
 						newId={newId}
 						liveNoteList={liveNoteList}
 						setLiveNoteList={setLiveNoteList}
@@ -275,6 +319,7 @@ const Main = (props, ref) => {
 						setDeletedNoteList={setDeletedNoteList}
 						getNotes={getNotes}
 						updateNoteToServer={updateNoteToServer}
+						validateNotePassword={validateNotePassword}
 					></NoteList>
 				</NoteListContainer>
 				<div>
@@ -292,6 +337,7 @@ const Main = (props, ref) => {
 										findIdx = index;
 										return true;
 									}
+									return false;
 								});
 
 								let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
@@ -342,12 +388,14 @@ const Main = (props, ref) => {
 			settingPanelOpen && <SettingPanel
 				profile={profile}
 				getProfile={getProfile}
+				getNotes={getNotes}
 				isModalOpen={settingPanelOpen}
 				closeModal={() => {
 					setSettingPanelOpen(false);
 				}}
 			></SettingPanel>
 		}
+		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
 	</>
 }
 

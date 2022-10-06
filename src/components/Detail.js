@@ -4,7 +4,6 @@ import Quill from "quill";
 import "quill/dist/quill.snow.css"
 import moment from "moment";
 import { Input, message, } from "antd";
-import { LockOutlined } from "@ant-design/icons";
 import axios from "axios";
 
 
@@ -22,15 +21,6 @@ const DetailContainer = styled.div`
 		text-align: center;
 		.title{
 			margin-bottom: 5px;
-		}
-	}
-	.lock_btn{
-		position: absolute;
-		right: 10px;
-		top: 15px;
-		&:hover{
-			color: red;
-			cursor: pointer;
 		}
 	}
 `;
@@ -158,15 +148,6 @@ const Detail = (props) => {
 				}}></Input>
 			</div>
 		}
-		<LockOutlined className="lock_btn" onClick={() => {
-			message.info("lock");
-			setProfile((pre) => {
-				return {
-					...pre,
-					lockNote: true,
-				}
-			});
-		}}></LockOutlined>
 		<EditorContainer id="editor-container">
 		</EditorContainer>
 	</DetailContainer>

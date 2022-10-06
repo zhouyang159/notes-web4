@@ -6,7 +6,6 @@ import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./SetNotePwModal";
-import AskNotePasswordModal from "./AskNotePasswordModal";
 
 const { SubMenu } = Menu;
 
@@ -90,9 +89,8 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { profile, getProfile, setProfile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer } = props;
+	const { profile, getProfile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
 	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
-	const AskNotePasswordModalRef = useRef();
 
 	const defaultNoteList = () => {
 		if (newId == null) {
@@ -178,27 +176,6 @@ const NoteList = (props) => {
 		} else {
 			return null;
 		}
-	}
-
-	const validateNotePassword = () => {
-		return new Promise((resolve, reject) => {
-			AskNotePasswordModalRef.current.open((password) => {
-				axios
-					.post(`/user/validateNotePassword/${password}`)
-					.then((res) => {
-						if (res.status === 0) {
-							AskNotePasswordModalRef.current.close();
-							setProfile((pre) => {
-								return {
-									...pre,
-									lockNote: false,
-								}
-							});
-							resolve(res);
-						}
-					});
-			});
-		});
 	}
 
 	const activeNote = [...liveNoteList, ...deletedNoteList].find((item) => {
@@ -496,7 +473,6 @@ const NoteList = (props) => {
 				}}
 			></SetNotePwModal>
 		}
-		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
 	</>
 };
 

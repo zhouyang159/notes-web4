@@ -12,7 +12,7 @@ const AskNotePasswordModal = (props, ref) => {
 
          setTimeout(() => {
             inputRef.current.focus();
-         }, 0);
+         }, 100);
       },
       close: () => {
          setIsModalOpen(false);
