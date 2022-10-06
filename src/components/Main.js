@@ -8,12 +8,21 @@ import moment from "moment";
 import NoteList from "./NoteList";
 import Detail from "./Detail";
 import SetNotePwModal from "./SetNotePwModal";
+import SettingPanel from "./SettingPanel";
 
 
 const Container = styled.div`
 	width: 950px;
 	height: 650px;
 	margin: 10px auto;
+`;
+const H1 = styled.h1`
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	.title{
+		cursor: pointer;
+	}
 `;
 const Body = styled.div`
 	border: 1px solid gray;
@@ -50,6 +59,7 @@ const Main = (props, ref) => {
 		return localStorage.getItem("username");
 	});
 	const [profile, setProfile] = useState();
+	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [newId, setNewId] = useState(null);
@@ -144,12 +154,6 @@ const Main = (props, ref) => {
 			});
 	}, []);
 
-	const H1 = styled.h1`
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    `;
-
 	const canNew = () => {
 		let can = true;
 		liveNoteList.forEach((item) => {
@@ -166,11 +170,21 @@ const Main = (props, ref) => {
 		return ans;
 	}
 
-	console.log(profile, 111);
+
 	return <>
 		<Container>
 			<H1>
-				<div><span>Notes</span> {loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}</div>
+				<div>
+					<span
+						className="title"
+						onClick={() => {
+							setSettingPanelOpen(true);
+						}}
+					>
+						Notes
+					</span>
+					{loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
+				</div>
 				<div>
 					<span>{username}</span>
 					<Button
@@ -322,6 +336,14 @@ const Main = (props, ref) => {
 			</Body>
 		</Container>
 		{
+			settingPanelOpen && <SettingPanel
+				isModalOpen={settingPanelOpen}
+				closeModal={() => {
+					setSettingPanelOpen(false);
+				}}
+			></SettingPanel>
+		}
+		{
 			isSetNotePwModalOpen && <SetNotePwModal
 				isModalOpen={isSetNotePwModalOpen}
 				closeModal={() => {
@@ -331,12 +353,11 @@ const Main = (props, ref) => {
 					message.success("set note password success");
 					setTimeout(() => {
 						setIsSetNotePwModalOpen(false);
-					}, 1000);
+					}, 600);
 				}}
 			></SetNotePwModal>
 		}
 	</>
-
 }
 
 export default forwardRef(Main);

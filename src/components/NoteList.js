@@ -220,12 +220,14 @@ const NoteList = (props) => {
 				onClick={() => {
 					if (profile?.hasNotePassword) {
 						if (curNote.encrypt) {
+							// remove lock
 							let newNote = {
 								...curNote,
 								encrypt: false,
 							}
 							updateNoteToServer(newNote, getNotes);
 						} else {
+							// add lock
 							let newNote = {
 								...curNote,
 								encrypt: true,
@@ -233,6 +235,7 @@ const NoteList = (props) => {
 							updateNoteToServer(newNote, getNotes);
 						}
 					} else {
+						// set new note password
 						openSetNotePwModal();
 					}
 				}}

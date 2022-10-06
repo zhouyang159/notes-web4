@@ -27,6 +27,7 @@ const SetNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSetPass
       onCancel={() => {
          closeModal();
       }}
+      maskClosable={false}
    >
       <Form
          name="basic"
