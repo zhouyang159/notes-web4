@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import NoteList from "./NoteList";
 import Detail from "./Detail";
+import SetNotePwModal from "./SetNotePwModal";
 
 
 const Container = styled.div`
@@ -36,6 +37,7 @@ const reorder = (list, startIndex, endIndex) => {
 };
 
 let timer = null;
+let lockNoteTimer = null;
 
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
@@ -47,6 +49,8 @@ const Main = (props, ref) => {
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
+	const [profile, setProfile] = useState();
+	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [newId, setNewId] = useState(null);
 	const [liveNoteList, setLiveNoteList] = useState([]);
@@ -124,6 +128,20 @@ const Main = (props, ref) => {
 
 	useEffect(() => {
 		getNotes();
+		axios
+			.get(`/user/${username}/profile`)
+			.then((res) => {
+
+				let profile = res.data;
+				if (profile.hasNotePassword) {
+					profile = {
+						...profile,
+						lockNote: true,
+					}
+				}
+
+				setProfile(profile);
+			});
 	}, []);
 
 	const H1 = styled.h1`
@@ -148,142 +166,177 @@ const Main = (props, ref) => {
 		return ans;
 	}
 
-	return <Container>
-		<H1>
-			<div><span>Notes</span> {loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}</div>
-			<div>
-				<span>{username}</span>
-				<Button
-					style={{ marginLeft: 10 }}
-					type="danger"
-					disabled={!canNew()}
-					onClick={() => {
-						setLiveNoteList((pre) => {
-							return pre.map((item) => {
-								item.active = false;
-								return item;
-							});
-						});
-						setDeletedNoteList((pre) => {
-							return pre.map((item) => {
-								item.active = false;
-								return item;
-							});
-						});
-
-						let newId = uuidv4();
-						let newArr = [
-							{
-								id: newId,
-								title: "New Note",
-								content: "",
-								number: 0,
-								createTime: moment(),
-								updateTime: moment(),
-								username: localStorage.getItem("username"),
-								deleted: 0,
-								active: false,
-							},
-							...liveNoteList
-						].map((item, index) => {
-							return {
-								...item,
-								active: false,
-								number: index,
-							}
-						});
-						setNewId(newId);
-						setLiveNoteList(newArr);
-
-						setTimeout(() => {
+	console.log(profile, 111);
+	return <>
+		<Container>
+			<H1>
+				<div><span>Notes</span> {loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}</div>
+				<div>
+					<span>{username}</span>
+					<Button
+						style={{ marginLeft: 10 }}
+						type="danger"
+						disabled={!canNew()}
+						onClick={() => {
 							setLiveNoteList((pre) => {
 								return pre.map((item) => {
-									if (item.id === newId) {
-										item.active = true;
-									}
+									item.active = false;
 									return item;
 								});
 							});
-						}, 20);
-					}}
-				>
-					new
-				</Button>
-				<Popconfirm
-					title="Are you sure you want to log out?"
-					onConfirm={logOut}
-					okText="Yes"
-					cancelText
-				>
-					<Button style={{ marginLeft: 10 }}>
-						Log out
-					</Button>
-				</Popconfirm>
-			</div>
-		</H1>
-		<Body onClick={() => {
-			document.getElementById("Menu").style.display = "none";
-			document.getElementById("Menu2").style.display = "none";
-		}}>
-			<NoteListContainer>
-				<NoteList
-					newId={newId}
-					liveNoteList={liveNoteList}
-					setLiveNoteList={setLiveNoteList}
-					deletedNoteList={deletedNoteList}
-					setDeletedNoteList={setDeletedNoteList}
-					getNotes={getNotes}
-					updateNoteToServer={updateNoteToServer}
-				></NoteList>
-			</NoteListContainer>
-			<div>
-				{
-					getActiveNote() &&
-					<Detail
-						newId={newId}
-						curNote={getActiveNote()}
-						createOrUpdateNote={(note) => {
-							let findIdx = -1;
-							liveNoteList.find((item, index) => {
-								if (item.id === note.id) {
-									findIdx = index;
-									return true;
-								}
+							setDeletedNoteList((pre) => {
+								return pre.map((item) => {
+									item.active = false;
+									return item;
+								});
 							});
 
-							let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
-								item.number = index;
-								item.active = false;
-
-								if (item.id === note.id) {
-									return {
-										...item,
-										...note,
-										active: true,
-									}
+							let newId = uuidv4();
+							let newArr = [
+								{
+									id: newId,
+									title: "New Note",
+									content: "",
+									number: 0,
+									createTime: moment(),
+									updateTime: moment(),
+									username: localStorage.getItem("username"),
+									deleted: 0,
+									active: false,
+								},
+								...liveNoteList
+							].map((item, index) => {
+								return {
+									...item,
+									active: false,
+									number: index,
 								}
-								return item;
-							})
-							setLiveNoteList(newNoteList);
+							});
+							setNewId(newId);
+							setLiveNoteList(newArr);
 
-							clearTimeout(timer);
-							timer = setTimeout(() => {
-								if (note.id === newId) {
-									// create note
-									setNewId(null);
-									createNoteToServer(note);
-								} else {
-									// update note
-									updateNoteToServer(note);
-								}
-							}, 700);
+							setTimeout(() => {
+								setLiveNoteList((pre) => {
+									return pre.map((item) => {
+										if (item.id === newId) {
+											item.active = true;
+										}
+										return item;
+									});
+								});
+							}, 20);
 						}}
 					>
-					</Detail>
-				}
-			</div>
-		</Body>
-	</Container>
+						new
+					</Button>
+					<Popconfirm
+						title="Are you sure you want to log out?"
+						onConfirm={logOut}
+						okText="Yes"
+						cancelText
+					>
+						<Button style={{ marginLeft: 10 }}>
+							Log out
+						</Button>
+					</Popconfirm>
+				</div>
+			</H1>
+			<Body onClick={() => {
+				document.getElementById("Menu").style.display = "none";
+				document.getElementById("Menu2").style.display = "none";
+			}}>
+				<NoteListContainer>
+					<NoteList
+						profile={profile}
+						newId={newId}
+						liveNoteList={liveNoteList}
+						setLiveNoteList={setLiveNoteList}
+						deletedNoteList={deletedNoteList}
+						setDeletedNoteList={setDeletedNoteList}
+						getNotes={getNotes}
+						updateNoteToServer={updateNoteToServer}
+						openSetNotePwModal={() => {
+							setIsSetNotePwModalOpen(true);
+						}}
+					></NoteList>
+				</NoteListContainer>
+				<div>
+					{
+						getActiveNote() &&
+						<Detail
+							profile={profile}
+							setProfile={setProfile}
+							newId={newId}
+							curNote={getActiveNote()}
+							createOrUpdateNote={(note) => {
+								let findIdx = -1;
+								liveNoteList.find((item, index) => {
+									if (item.id === note.id) {
+										findIdx = index;
+										return true;
+									}
+								});
+
+								let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
+									item.number = index;
+									item.active = false;
+
+									if (item.id === note.id) {
+										return {
+											...item,
+											...note,
+											active: true,
+										}
+									}
+									return item;
+								})
+								setLiveNoteList(newNoteList);
+
+								clearTimeout(timer);
+								timer = setTimeout(() => {
+									if (note.id === newId) {
+										// create note
+										setNewId(null);
+										createNoteToServer(note);
+									} else {
+										// update note
+										updateNoteToServer(note);
+									}
+								}, 700);
+
+								clearTimeout(lockNoteTimer);
+								lockNoteTimer = setTimeout(() => {
+									setProfile((pre) => {
+										return {
+											...pre,
+											lockNote: true,
+										}
+									});
+
+								}, 5 * 60 * 1000);
+							}}
+						>
+						</Detail>
+					}
+				</div>
+			</Body>
+		</Container>
+		{
+			isSetNotePwModalOpen && <SetNotePwModal
+				isModalOpen={isSetNotePwModalOpen}
+				closeModal={() => {
+					setIsSetNotePwModalOpen(false);
+				}}
+				onSetPasswordSuccess={() => {
+					message.success("set note password success");
+					setTimeout(() => {
+						setIsSetNotePwModalOpen(false);
+					}, 1000);
+				}}
+			></SetNotePwModal>
+		}
+	</>
+
 }
 
 export default forwardRef(Main);

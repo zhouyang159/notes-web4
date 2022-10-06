@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { message, Menu, Modal } from "antd";
-import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -45,6 +45,8 @@ const DraggableItem = styled.div`
 		line-height: normal;
 		font-weight: bold;
 		font-size: 18px;
+		display: flex;
+		justify-content: space-between;
 	}
 	.date {
 		line-height: normal;
@@ -60,9 +62,10 @@ const DraggableItem = styled.div`
 
 const ContextMenu = styled.div`
 	display: none;
-	background-color: #f4f4f4;
+	background-color: #d9d9d9;
 	z-index: 10;
 	border-radius: 5px;
+	padding: 5px;
 	.item {
 		&:hover{
 			background-color: bisque;
@@ -85,7 +88,7 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer } = props;
+	const { profile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer, openSetNotePwModal } = props;
 
 	const [curNote, setCurNote] = useState(null);
 
@@ -136,7 +139,6 @@ const NoteList = (props) => {
 	}
 
 	const handleClickDeletedNote = (note) => {
-
 		defaultNoteList();
 		setTimeout(() => {
 			setDeletedNoteList((pre) => {
@@ -164,7 +166,20 @@ const NoteList = (props) => {
 		document.getElementById("Menu2").style.display = "none";
 	}
 
-	return <div className="NoteList">
+	const getLockIcon = (note) => {
+		if (note.encrypt) {
+			if (profile?.lockNote) {
+				return <LockOutlined />
+			} else {
+				return <UnlockOutlined />
+			}
+		} else {
+			return null;
+		}
+	}
+
+
+	return <>
 		<ContextMenu id="Menu">
 			<div
 				className="item"
@@ -199,6 +214,30 @@ const NoteList = (props) => {
 				}}
 			>
 				move to trash
+			</div>
+			<div
+				className="item"
+				onClick={() => {
+					if (profile?.hasNotePassword) {
+						if (curNote.encrypt) {
+							let newNote = {
+								...curNote,
+								encrypt: false,
+							}
+							updateNoteToServer(newNote, getNotes);
+						} else {
+							let newNote = {
+								...curNote,
+								encrypt: true,
+							}
+							updateNoteToServer(newNote, getNotes);
+						}
+					} else {
+						openSetNotePwModal();
+					}
+				}}
+			>
+				{curNote?.encrypt ? 'remove lock' : 'add lock'}
 			</div>
 		</ContextMenu>
 		<ContextMenu id="Menu2">
@@ -249,136 +288,138 @@ const NoteList = (props) => {
 				recover
 			</div>
 		</ContextMenu>
-		<Menu
-			defaultOpenKeys={["sub1", "sub2"]}
-			mode="inline"
-			selectedKeys={getSelectedKeys()}
-		>
-			<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
-				<DragDropContext
-					onDragStart={() => {
-						defaultNoteList();
-					}}
-					onDragEnd={(result) => {
-						if (!result.destination) {
-							return;
-						}
-
-						let ans = Array.from(liveNoteList);
-						const [removed] = ans.splice(result.source.index, 1);
-						ans.splice(result.destination.index, 0, removed);
-						for (let i = 0; i < ans.length; i++) {
-							ans[i].number = i;
-						}
-						setLiveNoteList(ans);
-
-						ans = ans.map(note => {
-							return {
-								...note,
-								content: JSON.stringify(note.content),
-							}
-						});
-						axios.put("/note/updateLiveNoteList", ans);
-					}}
-				>
-					<Droppable droppableId="droppable">
-						{(provided, snapshot) => {
-							return <div
-								{...provided.droppableProps}
-								ref={provided.innerRef}
-								style={getListStyle(snapshot.isDraggingOver)}
-							>
-								{liveNoteList.map((note, index) => {
-									return <Draggable key={note.id} draggableId={note.id} index={index}>
-										{(provided, snapshot) => (
-											<DraggableItem
-												id={note.id.substring(0, note.id.indexOf("-"))}
-												ref={provided.innerRef}
-												{...provided.draggableProps}
-												{...provided.dragHandleProps}
-												style={getItemStyle(
-													snapshot.isDragging,
-													provided.draggableProps.style,
-													note.active
-												)}
-												onClick={() => {
-													handleClickLiveNote(note);
-												}}
-												onContextMenu={(e) => {
-													hideContextMenu();
-
-													handleClickLiveNote(note);
-													setCurNote(note);
-
-													e.preventDefault();
-													const clickX = e.clientX;
-													const clickY = e.clientY;
-													const Menu = document.getElementById("Menu");
-													Menu.style.display = "block";
-													Menu.style.position = "absolute";
-													Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
-												}}
-											>
-												<div className="title">{note.title}</div>
-												<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
-											</DraggableItem>
-										)}
-									</Draggable>
-								})}
-								{provided.placeholder}
-							</div>
+		<div className="NoteList">
+			<Menu
+				defaultOpenKeys={["sub1", "sub2"]}
+				mode="inline"
+				selectedKeys={getSelectedKeys()}
+			>
+				<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
+					<DragDropContext
+						onDragStart={() => {
+							defaultNoteList();
 						}}
-					</Droppable>
-				</DragDropContext>
-			</SubMenu>
+						onDragEnd={(result) => {
+							if (!result.destination) {
+								return;
+							}
 
-			<SubMenu key="sub2" icon={<DeleteOutlined />} title="Trash">
-				<div
-					style={getListStyle(false)}
-				>
-					{deletedNoteList.map((note) => {
-						let remainingDay = moment().diff(note.deleteTime, "days");
+							let ans = Array.from(liveNoteList);
+							const [removed] = ans.splice(result.source.index, 1);
+							ans.splice(result.destination.index, 0, removed);
+							for (let i = 0; i < ans.length; i++) {
+								ans[i].number = i;
+							}
+							setLiveNoteList(ans);
 
-						let dangerText = false;
-						if (remainingDay < 3) {
-							dangerText = true;
-						}
+							ans = ans.map(note => {
+								return {
+									...note,
+									content: JSON.stringify(note.content),
+								}
+							});
+							axios.put("/note/updateLiveNoteList", ans);
+						}}
+					>
+						<Droppable droppableId="droppable">
+							{(provided, snapshot) => {
+								return <div
+									{...provided.droppableProps}
+									ref={provided.innerRef}
+									style={getListStyle(snapshot.isDraggingOver)}
+								>
+									{liveNoteList.map((note, index) => {
+										return <Draggable key={note.id} draggableId={note.id} index={index}>
+											{(provided, snapshot) => (
+												<DraggableItem
+													id={note.id.substring(0, note.id.indexOf("-"))}
+													ref={provided.innerRef}
+													{...provided.draggableProps}
+													{...provided.dragHandleProps}
+													style={getItemStyle(
+														snapshot.isDragging,
+														provided.draggableProps.style,
+														note.active
+													)}
+													onClick={() => {
+														handleClickLiveNote(note);
+													}}
+													onContextMenu={(e) => {
+														hideContextMenu();
 
-						return <DraggableItem
-							key={note.id}
-							dangerText={dangerText}
-							style={getItemStyle(
-								false,
-								{},
-								note.active
-							)}
-							onClick={() => {
-								handleClickDeletedNote(note);
+														handleClickLiveNote(note);
+														setCurNote(note);
+
+														e.preventDefault();
+														const clickX = e.clientX;
+														const clickY = e.clientY;
+														const Menu = document.getElementById("Menu");
+														Menu.style.display = "block";
+														Menu.style.position = "absolute";
+														Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
+													}}
+												>
+													<div className="title">{note.title} <span>{getLockIcon(note)}</span></div>
+													<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+												</DraggableItem>
+											)}
+										</Draggable>
+									})}
+									{provided.placeholder}
+								</div>
 							}}
-							onContextMenu={(e) => {
-								hideContextMenu();
+						</Droppable>
+					</DragDropContext>
+				</SubMenu>
 
-								handleClickDeletedNote(note);
-								setCurNote(note);
+				<SubMenu key="sub2" icon={<DeleteOutlined />} title="Trash">
+					<div
+						style={getListStyle(false)}
+					>
+						{deletedNoteList.map((note) => {
+							let remainingDay = moment().diff(note.deleteTime, "days");
 
-								e.preventDefault();
-								const clickX = e.clientX;
-								const clickY = e.clientY;
-								const Menu = document.getElementById("Menu2");
-								Menu.style.display = "block";
-								Menu.style.position = "absolute";
-								Menu.style.left = `${clickX}px`;
-								Menu.style.top = `${clickY}px`;
-							}}
-						>
-							<div className="title">{note.title}</div>
-							<div className="date">{remainingDay} days</div>
-						</DraggableItem>
-					})}
-				</div>
-			</SubMenu>
-		</Menu>
-	</div >
+							let dangerText = false;
+							if (remainingDay < 3) {
+								dangerText = true;
+							}
+
+							return <DraggableItem
+								key={note.id}
+								dangerText={dangerText}
+								style={getItemStyle(
+									false,
+									{},
+									note.active
+								)}
+								onClick={() => {
+									handleClickDeletedNote(note);
+								}}
+								onContextMenu={(e) => {
+									hideContextMenu();
+
+									handleClickDeletedNote(note);
+									setCurNote(note);
+
+									e.preventDefault();
+									const clickX = e.clientX;
+									const clickY = e.clientY;
+									const Menu = document.getElementById("Menu2");
+									Menu.style.display = "block";
+									Menu.style.position = "absolute";
+									Menu.style.left = `${clickX}px`;
+									Menu.style.top = `${clickY}px`;
+								}}
+							>
+								<div className="title">{note.title}</div>
+								<div className="date">{remainingDay} days</div>
+							</DraggableItem>
+						})}
+					</div>
+				</SubMenu>
+			</Menu>
+		</div >
+	</>
 };
 
 export default NoteList;

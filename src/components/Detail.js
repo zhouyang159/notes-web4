@@ -3,18 +3,43 @@ import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
 import moment from "moment";
+import { Input, message, Button } from "antd";
+import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import axios from "axios";
 
 
 const DetailContainer = styled.div`
 	height: 100%;
 	width: 698px;
+	position: relative;
+	.lock_panel{
+		background: #bfbfbf;
+		position: absolute;
+		width: 100%;
+		height: 100%;
+		z-index: 20;
+		padding: 200px;
+		text-align: center;
+		.title{
+			margin-bottom: 5px;
+		}
+	}
+	.lock_btn{
+		position: absolute;
+		right: 10px;
+		top: 15px;
+		&:hover{
+			color: red;
+			cursor: pointer;
+		}
+	}
 `;
 const EditorContainer = styled.div`
 	height: 93%;
 `;
 
 const Detail = (props) => {
-	const { newId, createOrUpdateNote, curNote } = props;
+	const { profile, setProfile, newId, createOrUpdateNote, curNote } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
 	const [textChangeHandler, setTextChangeHandler] = useState(() => {
@@ -105,6 +130,43 @@ const Detail = (props) => {
 
 
 	return <DetailContainer className="Detail">
+		{
+			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
+				<div className="title">enter password to unlock this note</div>
+				<Input onPressEnter={(e) => {
+					const key = 'messageKey';
+					message.loading({ content: 'unlocking...', key });
+
+					axios
+						.post(`/user/validateNotePassword/${e.target.value}`)
+						.then((res) => {
+							if (res.status === 0) {
+								setTimeout(() => {
+									message.success({ content: 'unlock!', key, duration: 2 });
+									setProfile((pre) => {
+										return {
+											...pre,
+											lockNote: false,
+										}
+									});
+								}, 1000);
+							}
+						})
+						.catch(() => {
+							message.destroy(key);
+						});
+				}}></Input>
+			</div>
+		}
+		<LockOutlined className="lock_btn" onClick={() => {
+			message.info("lock");
+			setProfile((pre) => {
+				return {
+					...pre,
+					lockNote: true,
+				}
+			});
+		}}></LockOutlined>
 		<EditorContainer id="editor-container">
 		</EditorContainer>
 	</DetailContainer>
