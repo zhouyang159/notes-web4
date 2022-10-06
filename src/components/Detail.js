@@ -3,7 +3,7 @@ import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
 import moment from "moment";
-import { Input, message,  } from "antd";
+import { Input, message, } from "antd";
 import { LockOutlined } from "@ant-design/icons";
 import axios from "axios";
 
@@ -17,7 +17,7 @@ const DetailContainer = styled.div`
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		z-index: 20;
+		z-index: 10;
 		padding: 200px;
 		text-align: center;
 		.title{
@@ -134,15 +134,15 @@ const Detail = (props) => {
 			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<div className="title">enter password to unlock this note</div>
 				<Input onPressEnter={(e) => {
-					const key = 'messageKey';
-					message.loading({ content: 'unlocking...', key });
+					const key = "messageKey";
+					message.loading({ content: "unlocking...", key });
 
 					axios
 						.post(`/user/validateNotePassword/${e.target.value}`)
 						.then((res) => {
 							if (res.status === 0) {
 								setTimeout(() => {
-									message.success({ content: 'unlock!', key, duration: 2 });
+									message.success({ content: "unlock!", key, duration: 2 });
 									setProfile((pre) => {
 										return {
 											...pre,

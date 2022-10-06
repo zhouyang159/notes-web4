@@ -1,13 +1,12 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle } from "react";
 import axios from "axios";
-import { Button, Popconfirm, message } from "antd";
-import { SyncOutlined } from "@ant-design/icons";
+import { Button, message, Dropdown, Menu, Space } from "antd";
+import { SyncOutlined, EllipsisOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import NoteList from "./NoteList";
 import Detail from "./Detail";
-import SetNotePwModal from "./SetNotePwModal";
 import SettingPanel from "./SettingPanel";
 
 
@@ -20,9 +19,6 @@ const H1 = styled.h1`
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
-	.title{
-		cursor: pointer;
-	}
 `;
 const Body = styled.div`
 	border: 1px solid gray;
@@ -60,7 +56,6 @@ const Main = (props, ref) => {
 	});
 	const [profile, setProfile] = useState();
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
-	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [newId, setNewId] = useState(null);
 	const [liveNoteList, setLiveNoteList] = useState([]);
@@ -136,12 +131,10 @@ const Main = (props, ref) => {
 			});
 	}
 
-	useEffect(() => {
-		getNotes();
+	const getProfile = () => {
 		axios
 			.get(`/user/${username}/profile`)
 			.then((res) => {
-
 				let profile = res.data;
 				if (profile.hasNotePassword) {
 					profile = {
@@ -149,9 +142,13 @@ const Main = (props, ref) => {
 						lockNote: true,
 					}
 				}
-
 				setProfile(profile);
 			});
+	}
+
+	useEffect(() => {
+		getNotes();
+		getProfile();
 	}, []);
 
 	const canNew = () => {
@@ -177,9 +174,6 @@ const Main = (props, ref) => {
 				<div>
 					<span
 						className="title"
-						onClick={() => {
-							setSettingPanelOpen(true);
-						}}
 					>
 						Notes
 					</span>
@@ -188,7 +182,8 @@ const Main = (props, ref) => {
 				<div>
 					<span>{username}</span>
 					<Button
-						style={{ marginLeft: 10 }}
+						style={{ marginLeft: 10, marginRight: 10 }}
+						size="small"
 						type="danger"
 						disabled={!canNew()}
 						onClick={() => {
@@ -243,16 +238,25 @@ const Main = (props, ref) => {
 					>
 						new
 					</Button>
-					<Popconfirm
-						title="Are you sure you want to log out?"
-						onConfirm={logOut}
-						okText="Yes"
-						cancelText
+					<Dropdown
+						overlay={
+							<Menu
+								items={[
+									{
+										label: <span onClick={() => setSettingPanelOpen(true)}>profile</span>,
+										key: '0',
+									},
+									{
+										label: <span onClick={logOut}>logout</span>,
+										key: '1',
+									},
+								]}
+							/>
+						}
+						trigger={['click']}
 					>
-						<Button style={{ marginLeft: 10 }}>
-							Log out
-						</Button>
-					</Popconfirm>
+						<Button size="small" shape="circle" icon={<EllipsisOutlined />} />
+					</Dropdown>
 				</div>
 			</H1>
 			<Body onClick={() => {
@@ -262,6 +266,8 @@ const Main = (props, ref) => {
 				<NoteListContainer>
 					<NoteList
 						profile={profile}
+						getProfile={getProfile}
+						setProfile={setProfile}
 						newId={newId}
 						liveNoteList={liveNoteList}
 						setLiveNoteList={setLiveNoteList}
@@ -269,9 +275,6 @@ const Main = (props, ref) => {
 						setDeletedNoteList={setDeletedNoteList}
 						getNotes={getNotes}
 						updateNoteToServer={updateNoteToServer}
-						openSetNotePwModal={() => {
-							setIsSetNotePwModalOpen(true);
-						}}
 					></NoteList>
 				</NoteListContainer>
 				<div>
@@ -337,25 +340,13 @@ const Main = (props, ref) => {
 		</Container>
 		{
 			settingPanelOpen && <SettingPanel
+				profile={profile}
+				getProfile={getProfile}
 				isModalOpen={settingPanelOpen}
 				closeModal={() => {
 					setSettingPanelOpen(false);
 				}}
 			></SettingPanel>
-		}
-		{
-			isSetNotePwModalOpen && <SetNotePwModal
-				isModalOpen={isSetNotePwModalOpen}
-				closeModal={() => {
-					setIsSetNotePwModalOpen(false);
-				}}
-				onSetPasswordSuccess={() => {
-					message.success("set note password success");
-					setTimeout(() => {
-						setIsSetNotePwModalOpen(false);
-					}, 600);
-				}}
-			></SetNotePwModal>
 		}
 	</>
 }

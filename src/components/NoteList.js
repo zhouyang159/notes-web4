@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
+import SetNotePwModal from "./SetNotePwModal";
+import AskNotePasswordModal from "./AskNotePasswordModal";
 
 const { SubMenu } = Menu;
 
@@ -63,7 +65,7 @@ const DraggableItem = styled.div`
 const ContextMenu = styled.div`
 	display: none;
 	background-color: #d9d9d9;
-	z-index: 10;
+	z-index: 50;
 	border-radius: 5px;
 	padding: 5px;
 	.item {
@@ -88,9 +90,9 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { profile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer, openSetNotePwModal } = props;
-
-	const [curNote, setCurNote] = useState(null);
+	const { profile, getProfile, setProfile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer } = props;
+	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
+	const AskNotePasswordModalRef = useRef();
 
 	const defaultNoteList = () => {
 		if (newId == null) {
@@ -178,69 +180,123 @@ const NoteList = (props) => {
 		}
 	}
 
+	const validateNotePassword = () => {
+		return new Promise((resolve, reject) => {
+			AskNotePasswordModalRef.current.open((password) => {
+				axios
+					.post(`/user/validateNotePassword/${password}`)
+					.then((res) => {
+						if (res.status === 0) {
+							AskNotePasswordModalRef.current.close();
+							setProfile((pre) => {
+								return {
+									...pre,
+									lockNote: false,
+								}
+							});
+							resolve(res);
+						}
+					});
+			});
+		});
+	}
+
+	const activeNote = [...liveNoteList, ...deletedNoteList].find((item) => {
+		if (item.active) {
+			return true;
+		}
+		return false;
+	});
+
 
 	return <>
 		<ContextMenu id="Menu">
 			<div
 				className="item"
-				onClick={() => {
-					if (curNote.title === "New Note") {
-						axios.delete(`/note/${curNote.id}`).catch((err) => {
-							console.log(err);
-						});
-						setLiveNoteList(pre => {
-							return pre.filter(item => item.title !== "New Note");
-						});
-					} else {
-						axios.delete(`/note/fake/${curNote.id}`).then(() => {
-							let divId = curNote.id.substring(0, curNote.id.indexOf("-"));
-							const element = document.getElementById(divId);
-							element.style.background = "red";
+				onClick={async () => {
+					const moveToTrash = () => {
+						if (activeNote.title === "New Note") {
+							axios.delete(`/note/${activeNote.id}`).catch((err) => {
+								console.log(err);
+							});
+							setLiveNoteList(pre => {
+								return pre.filter(item => item.title !== "New Note");
+							});
+						} else {
+							axios.delete(`/note/fake/${activeNote.id}`).then(() => {
+								let divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
+								const element = document.getElementById(divId);
+								element.style.background = "red";
 
-							setTimeout(() => {
-								element.style.transition = "all 0.4s";
-								element.style.padding = 0;
-								element.style.height = 0;
-								element.style.border = 0;
-							}, 10);
+								setTimeout(() => {
+									element.style.transition = "all 0.4s";
+									element.style.padding = 0;
+									element.style.height = 0;
+									element.style.border = 0;
+								}, 10);
 
-							setTimeout(() => {
-								getNotes();
-							}, 400);
-						});
+								setTimeout(() => {
+									getNotes();
+								}, 400);
+							});
+						}
+						document.getElementById("Menu").style.display = "none";
 					}
-					setCurNote(null);
-					document.getElementById("Menu").style.display = "none";
+
+					if (activeNote.encrypt) {
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							console.log(333);
+							moveToTrash();
+						} else {
+							// now is unlock status
+							moveToTrash();
+						}
+					} else {
+						moveToTrash();
+					}
 				}}
 			>
 				move to trash
 			</div>
 			<div
 				className="item"
-				onClick={() => {
+				onClick={async () => {
 					if (profile?.hasNotePassword) {
-						if (curNote.encrypt) {
-							// remove lock
-							let newNote = {
-								...curNote,
-								encrypt: false,
+						const addLockOrRemoveLock = () => {
+							if (activeNote.encrypt) {
+								// remove lock
+								let newNote = {
+									...activeNote,
+									encrypt: false,
+								}
+								updateNoteToServer(newNote, getNotes);
+							} else {
+								// add lock
+								let newNote = {
+									...activeNote,
+									encrypt: true,
+								}
+								updateNoteToServer(newNote, getNotes);
 							}
-							updateNoteToServer(newNote, getNotes);
+						}
+
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							addLockOrRemoveLock();
 						} else {
-							// add lock
-							let newNote = {
-								...curNote,
-								encrypt: true,
-							}
-							updateNoteToServer(newNote, getNotes);
+							// now is unlock status
+							addLockOrRemoveLock();
 						}
 					} else {
 						// set new note password
-						openSetNotePwModal();
+						setIsSetNotePwModalOpen(true);
 					}
 				}}
 			>
-				{curNote?.encrypt ? 'remove lock' : 'add lock'}
+				{activeNote?.encrypt ? "remove lock" : "add lock"}
 			</div>
 		</ContextMenu>
 		<ContextMenu id="Menu2">
@@ -259,7 +315,7 @@ const NoteList = (props) => {
 						cancelText: "Cancel",
 						onOk: () => {
 							axios
-								.delete(`/note/${curNote.id}`)
+								.delete(`/note/${activeNote.id}`)
 								.then(() => {
 									message.success("delete success");
 									getNotes();
@@ -268,7 +324,6 @@ const NoteList = (props) => {
 									message.error("something wrong");
 								});
 
-							setCurNote(null);
 							document.getElementById("Menu2").style.display = "none";
 						}
 					});
@@ -280,11 +335,11 @@ const NoteList = (props) => {
 				className="item"
 				onClick={() => {
 					let newNote = {
-						...curNote,
+						...activeNote,
 						deleted: 0,
 					}
 					updateNoteToServer(newNote, getNotes);
-					setCurNote(null);
+
 					document.getElementById("Menu2").style.display = "none";
 				}}
 			>
@@ -351,7 +406,6 @@ const NoteList = (props) => {
 														hideContextMenu();
 
 														handleClickLiveNote(note);
-														setCurNote(note);
 
 														e.preventDefault();
 														const clickX = e.clientX;
@@ -402,7 +456,6 @@ const NoteList = (props) => {
 									hideContextMenu();
 
 									handleClickDeletedNote(note);
-									setCurNote(note);
 
 									e.preventDefault();
 									const clickX = e.clientX;
@@ -414,7 +467,7 @@ const NoteList = (props) => {
 									Menu.style.top = `${clickY}px`;
 								}}
 							>
-								<div className="title">{note.title}</div>
+								<div className="title">{note.title} <span>{getLockIcon(note)}</span></div>
 								<div className="date">{remainingDay} days</div>
 							</DraggableItem>
 						})}
@@ -422,6 +475,28 @@ const NoteList = (props) => {
 				</SubMenu>
 			</Menu>
 		</div >
+		{
+			isSetNotePwModalOpen && <SetNotePwModal
+				isModalOpen={isSetNotePwModalOpen}
+				closeModal={() => {
+					setIsSetNotePwModalOpen(false);
+				}}
+				onSuccess={() => {
+					message.success("set note password success");
+					setTimeout(() => {
+						setIsSetNotePwModalOpen(false);
+						getProfile();
+						// add lock
+						let newNote = {
+							...activeNote,
+							encrypt: true,
+						}
+						updateNoteToServer(newNote, getNotes);
+					}, 600);
+				}}
+			></SetNotePwModal>
+		}
+		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
 	</>
 };
 

@@ -3,10 +3,9 @@ import axios from "axios";
 import { message, Modal, Form, Input } from "antd";
 
 
-const SetNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSetPasswordSuccess = () => { } }) => {
+const SetNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSuccess = () => { } }) => {
    const [password1, setPassword1] = useState("");
    const [password2, setPassword2] = useState("");
-
 
    return <Modal
       title="Set note password"
@@ -16,13 +15,16 @@ const SetNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSetPass
             message.warn("please check password");
             return;
          }
+         if (password1 === "" || password2 === "") {
+            message.warn("please check password");
+            return;
+         }
 
          axios
             .post(`/user/setNotePassword/${password1}`)
             .then((res) => {
-               onSetPasswordSuccess();
+               onSuccess();
             });
-
       }}
       onCancel={() => {
          closeModal();
@@ -36,13 +38,11 @@ const SetNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSetPass
       >
          <Form.Item
             label="note password"
-            rules={[{ required: true, message: 'Please input your username!' }]}
          >
             <Input value={password1} onChange={(e) => setPassword1(e.target.value)} />
          </Form.Item>
          <Form.Item
-            label="type again"
-            rules={[{ required: true, message: 'Please input your password!' }]}
+            label="check"
          >
             <Input value={password2} onChange={(e) => setPassword2(e.target.value)} />
          </Form.Item>
