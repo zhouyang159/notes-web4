@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Modal, message } from "antd";
-import SetNotePwModal from "./SetNotePwModal";
-import ChangeNotePwModal from "./ChangeNotePwModal";
+import SetNotePwModal from "../modals/SetNotePwModal";
+import ChangeNotePwModal from "../modals/ChangeNotePwModal";
 
 
 const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, closeModal = () => { } }) => {

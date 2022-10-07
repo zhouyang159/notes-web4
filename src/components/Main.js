@@ -7,8 +7,8 @@ import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import NoteList from "./NoteList";
 import Detail from "./Detail";
-import SettingPanel from "./SettingPanel";
-import AskNotePasswordModal from "./AskNotePasswordModal";
+import SettingPanel from "./panels/SettingPanel";
+import AskNotePasswordModal from "./modals/AskNotePasswordModal";
 
 
 const Container = styled.div`
@@ -192,7 +192,20 @@ const Main = (props, ref) => {
 	}, [getProfile]);
 
 
-	return <>
+	return <div onClick={(e) => {
+		// 5 min timeout for no modify
+		if (profile?.hasNotePassword) {
+			clearTimeout(lockNoteTimer);
+			lockNoteTimer = setTimeout(() => {
+				setProfile((pre) => {
+					return {
+						...pre,
+						lockNote: true,
+					}
+				});
+			}, 5 * 60 * 1000);
+		}
+	}}>
 		<Container>
 			<H1>
 				<div>
@@ -262,27 +275,28 @@ const Main = (props, ref) => {
 					>
 						new
 					</Button>
-					<Button size="small" shape="circle" icon={
-						profile?.lockNote ?
-							<LockOutlined
-								onClick={async () => {
-									await validateNotePassword();
-									message.success("unlock note!");
-								}}
-							></LockOutlined> :
-							<UnlockOutlined
-								onClick={() => {
-									setProfile((pre) => {
-										return {
-											...pre,
-											lockNote: true,
-										}
-									});
-									message.info("lock");
-								}}
-							></UnlockOutlined>
-					} />
-					&nbsp;
+					{
+						profile?.hasNotePassword && <Button size="small" shape="circle" style={{ marginRight: 10 }} icon={
+							profile?.lockNote ?
+								<LockOutlined
+									onClick={async () => {
+										await validateNotePassword();
+										message.success("unlock note!");
+									}}
+								></LockOutlined> :
+								<UnlockOutlined
+									onClick={() => {
+										setProfile((pre) => {
+											return {
+												...pre,
+												lockNote: true,
+											}
+										});
+										message.info("lock");
+									}}
+								></UnlockOutlined>
+						} />
+					}
 					<Dropdown
 						overlay={
 							<Menu
@@ -366,17 +380,6 @@ const Main = (props, ref) => {
 										updateNoteToServer(note);
 									}
 								}, 700);
-
-								clearTimeout(lockNoteTimer);
-								lockNoteTimer = setTimeout(() => {
-									setProfile((pre) => {
-										return {
-											...pre,
-											lockNote: true,
-										}
-									});
-
-								}, 5 * 60 * 1000);
 							}}
 						>
 						</Detail>
@@ -396,7 +399,7 @@ const Main = (props, ref) => {
 			></SettingPanel>
 		}
 		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
-	</>
+	</div>
 }
 
 export default forwardRef(Main);

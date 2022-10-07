@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "./App.css";
 import axios from "axios";
 import { message } from "antd";
-import SignInPanel from "./components/SignInPanel";
+import SignInPanel from "./components/panels/SignInPanel";
 import Main from "./components/Main";
 
 
@@ -43,8 +43,13 @@ const App = () => {
 			return response.data;
 		}, function (error) {
 			// Any status codes that falls outside the range of 2xx cause this function to trigger
-			// Do something with response error
-			message.error(error?.response?.data?.msg);
+			let { status, msg } = error?.response.data;
+			message.error(msg);
+			if (status === 6 || status === 7) {
+				localStorage.removeItem("token");
+				setSignIn(false);
+			}
+
 			return Promise.reject(error);
 		});
 	}

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Result } from "antd";
+import { SyncOutlined, EllipsisOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
@@ -14,10 +16,11 @@ const DetailContainer = styled.div`
 	.lock_panel{
 		background: #bfbfbf;
 		position: absolute;
+		top: 0;
 		width: 100%;
 		height: 100%;
 		z-index: 10;
-		padding: 200px;
+		padding: 100px;
 		text-align: center;
 		.title{
 			margin-bottom: 5px;
@@ -122,30 +125,34 @@ const Detail = (props) => {
 	return <DetailContainer className="Detail">
 		{
 			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
-				<div className="title">enter password to unlock this note</div>
-				<Input onPressEnter={(e) => {
-					const key = "messageKey";
-					message.loading({ content: "unlocking...", key });
+				<Result
+					icon={<LockOutlined />}
+					title="This note had been lock"
+					subTitle="enter password to unlock this note"
+					extra={<Input style={{ width: 180 }} size="small" onPressEnter={(e) => {
+						const key = "messageKey";
+						message.loading({ content: "unlocking...", key });
 
-					axios
-						.post(`/user/validateNotePassword/${e.target.value}`)
-						.then((res) => {
-							if (res.status === 0) {
-								setTimeout(() => {
-									message.success({ content: "unlock!", key, duration: 2 });
-									setProfile((pre) => {
-										return {
-											...pre,
-											lockNote: false,
-										}
-									});
-								}, 1000);
-							}
-						})
-						.catch(() => {
-							message.destroy(key);
-						});
-				}}></Input>
+						axios
+							.post(`/user/validateNotePassword/${e.target.value}`)
+							.then((res) => {
+								if (res.status === 0) {
+									setTimeout(() => {
+										message.success({ content: "unlock!", key, duration: 2 });
+										setProfile((pre) => {
+											return {
+												...pre,
+												lockNote: false,
+											}
+										});
+									}, 1000);
+								}
+							})
+							.catch(() => {
+								message.destroy(key);
+							});
+					}}></Input>}
+				/>
 			</div>
 		}
 		<EditorContainer id="editor-container">

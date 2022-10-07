@@ -1,11 +1,11 @@
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
-import SetNotePwModal from "./SetNotePwModal";
+import SetNotePwModal from "./modals/SetNotePwModal";
 
 const { SubMenu } = Menu;
 
