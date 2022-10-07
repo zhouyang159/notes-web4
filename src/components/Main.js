@@ -1,7 +1,7 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef } from "react";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
-import { SyncOutlined, EllipsisOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
@@ -217,74 +217,75 @@ const Main = (props, ref) => {
 					{loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
 				<div>
-					<span>{username}</span>
+					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>
 					<Button
-						style={{ marginLeft: 10, marginRight: 10 }}
-						size="small"
-						type="danger"
-						disabled={!canNew()}
-						onClick={() => {
-							setLiveNoteList((pre) => {
-								return pre.map((item) => {
-									item.active = false;
-									return item;
-								});
-							});
-							setDeletedNoteList((pre) => {
-								return pre.map((item) => {
-									item.active = false;
-									return item;
-								});
-							});
-
-							let newId = uuidv4();
-							let newArr = [
-								{
-									id: newId,
-									title: "New Note",
-									content: "",
-									number: 0,
-									createTime: moment(),
-									updateTime: moment(),
-									username: localStorage.getItem("username"),
-									deleted: 0,
-									active: false,
-								},
-								...liveNoteList
-							].map((item, index) => {
-								return {
-									...item,
-									active: false,
-									number: index,
-								}
-							});
-							setNewId(newId);
-							setLiveNoteList(newArr);
-
-							setTimeout(() => {
-								setLiveNoteList((pre) => {
-									return pre.map((item) => {
-										if (item.id === newId) {
-											item.active = true;
-										}
-										return item;
+						size="small" shape="circle" style={{ marginRight: 10 }}
+						icon={
+							<EditFilled
+								onClick={() => {
+									setLiveNoteList((pre) => {
+										return pre.map((item) => {
+											item.active = false;
+											return item;
+										});
 									});
-								});
-							}, 20);
-						}}
+									setDeletedNoteList((pre) => {
+										return pre.map((item) => {
+											item.active = false;
+											return item;
+										});
+									});
+
+									let newId = uuidv4();
+									let newArr = [
+										{
+											id: newId,
+											title: "New Note",
+											content: "",
+											number: 0,
+											createTime: moment(),
+											updateTime: moment(),
+											username: localStorage.getItem("username"),
+											deleted: 0,
+											active: false,
+										},
+										...liveNoteList
+									].map((item, index) => {
+										return {
+											...item,
+											active: false,
+											number: index,
+										}
+									});
+									setNewId(newId);
+									setLiveNoteList(newArr);
+
+									setTimeout(() => {
+										setLiveNoteList((pre) => {
+											return pre.map((item) => {
+												if (item.id === newId) {
+													item.active = true;
+												}
+												return item;
+											});
+										});
+									}, 20);
+
+								}}
+							></EditFilled>
+						}
 					>
-						new
 					</Button>
 					{
 						profile?.hasNotePassword && <Button size="small" shape="circle" style={{ marginRight: 10 }} icon={
 							profile?.lockNote ?
-								<LockOutlined
+								<LockFilled
 									onClick={async () => {
 										await validateNotePassword();
 										message.success("unlock note!");
 									}}
-								></LockOutlined> :
-								<UnlockOutlined
+								></LockFilled> :
+								<span class="iconfont icon-unlocked"
 									onClick={() => {
 										setProfile((pre) => {
 											return {
@@ -294,7 +295,7 @@ const Main = (props, ref) => {
 										});
 										message.info("lock");
 									}}
-								></UnlockOutlined>
+								></span>
 						} />
 					}
 					<Dropdown

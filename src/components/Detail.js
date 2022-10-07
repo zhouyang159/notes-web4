@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Result } from "antd";
-import { SyncOutlined, EllipsisOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import { SyncOutlined, EllipsisOutlined, LockFilled, UnlockFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
@@ -126,7 +126,7 @@ const Detail = (props) => {
 		{
 			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<Result
-					icon={<LockOutlined />}
+					icon={<LockFilled />}
 					title="This note had been lock"
 					subTitle="enter password to unlock this note"
 					extra={<Input style={{ width: 180 }} size="small" onPressEnter={(e) => {

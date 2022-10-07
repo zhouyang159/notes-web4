@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { message, Menu, Modal } from "antd";
-import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockOutlined, UnlockOutlined } from "@ant-design/icons";
+import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
@@ -169,9 +169,9 @@ const NoteList = (props) => {
 	const getLockIcon = (note) => {
 		if (note.encrypt) {
 			if (profile?.lockNote) {
-				return <LockOutlined />
+				return <LockFilled />
 			} else {
-				return <UnlockOutlined />
+				return <span class="iconfont icon-unlocked"></span>
 			}
 		} else {
 			return null;

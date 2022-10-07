@@ -66,25 +66,24 @@ const ChangeNotePwModal = ({ isModalOpen = false, closeModal = () => { }, onSucc
       </div>}
    >
       <Form
-         name="basic"
-         labelCol={{ span: 8 }}
-         wrapperCol={{ span: 16 }}
+         labelCol={{ span: 6 }}
+         wrapperCol={{ span: 12 }}
       >
          <Form.Item
             label="old password"
          >
-            <Input value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
+            <Input size="small" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} />
          </Form.Item>
 
          <Form.Item
             label="new password"
          >
-            <Input value={password1} onChange={(e) => setPassword1(e.target.value)} />
+            <Input size="small" value={password1} onChange={(e) => setPassword1(e.target.value)} />
          </Form.Item>
          <Form.Item
             label="check"
          >
-            <Input value={password2} onChange={(e) => setPassword2(e.target.value)} />
+            <Input size="small" value={password2} onChange={(e) => setPassword2(e.target.value)} />
          </Form.Item>
       </Form>
    </Modal>
