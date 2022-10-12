@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Result } from "antd";
-import { SyncOutlined, EllipsisOutlined, LockFilled, UnlockFilled } from "@ant-design/icons";
+import { LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
@@ -129,7 +129,7 @@ const Detail = (props) => {
 					icon={<LockFilled />}
 					title="This note had been lock"
 					subTitle="enter password to unlock this note"
-					extra={<Input style={{ width: 180 }} size="small" onPressEnter={(e) => {
+					extra={<Input type="password" style={{ width: 180 }} size="small" onPressEnter={(e) => {
 						const key = "messageKey";
 						message.loading({ content: "unlocking...", key });
 
