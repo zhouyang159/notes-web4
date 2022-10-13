@@ -42,12 +42,18 @@ const Detail = (props) => {
 	const getTextChangeHandler = (quill) => {
 		return () => {
 			let title = "";
-			let str = JSON.stringify(quill.getText(0, 200));
+			let text = JSON.stringify(quill.getText(0, 200).trim());
 
-			if (str.indexOf("\\n") !== -1 && str.indexOf("\\n") < 10) {
-				title = str.slice(1, str.indexOf("\\n"));
+			let titleCharNum = 30;
+			if (text.indexOf("\\n") !== -1 && text.indexOf("\\n") < titleCharNum) {
+				// 回车在30个字符以内
+				title = text.slice(1, text.indexOf("\\n"));
 			} else {
-				title = str.slice(1, 10);
+				// 回车在30个字符以外
+				title = text.slice(1, titleCharNum);
+			}
+			if (title.substring(title.length - 1) === "\"") {
+				title = title.substring(0, title.length - 1)
 			}
 
 			if (title === "") {

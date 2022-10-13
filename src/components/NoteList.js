@@ -38,6 +38,7 @@ const DraggableItem = styled.div`
 	border-radius: 3px;
 	height: 66px;
 	overflow: hidden;
+	position: relative;
 	&:hover{
 		transition: all 0.2s ;
 		background: ${props => activeBackground};
@@ -46,8 +47,10 @@ const DraggableItem = styled.div`
 		line-height: normal;
 		font-weight: bold;
 		font-size: 18px;
-		display: flex;
-		justify-content: space-between;
+		width: 95%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.date {
 		line-height: normal;
@@ -58,6 +61,11 @@ const DraggableItem = styled.div`
 		}
 		return "gray";
 	}};
+	}
+	.lock_icon {
+		position: absolute;
+		top: 18px;
+		right: 6px;
 	}
 `;
 
@@ -171,7 +179,7 @@ const NoteList = (props) => {
 			if (profile?.lockNote) {
 				return <LockFilled />
 			} else {
-				return <span class="iconfont icon-unlocked"></span>
+				return <span className="iconfont icon-unlocked"></span>
 			}
 		} else {
 			return null;
@@ -393,8 +401,9 @@ const NoteList = (props) => {
 														Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
 													}}
 												>
-													<div className="title">{note.title} <span>{getLockIcon(note)}</span></div>
+													<div className="title">{note.title}</div>
 													<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+													<div className="lock_icon">{getLockIcon(note)}</div>
 												</DraggableItem>
 											)}
 										</Draggable>
@@ -411,7 +420,8 @@ const NoteList = (props) => {
 						style={getListStyle(false)}
 					>
 						{deletedNoteList.map((note) => {
-							let remainingDay = moment().diff(note.deleteTime, "days");
+							let eraseDate = moment(note.deleteTime).add(11, "days");
+							let remainingDay = eraseDate.diff(moment(), "days");
 
 							let dangerText = false;
 							if (remainingDay < 3) {
@@ -444,8 +454,9 @@ const NoteList = (props) => {
 									Menu.style.top = `${clickY}px`;
 								}}
 							>
-								<div className="title">{note.title} <span>{getLockIcon(note)}</span></div>
+								<div className="title">{note.title}</div>
 								<div className="date">{remainingDay} days</div>
+								<div className="lock_icon">{getLockIcon(note)}</div>
 							</DraggableItem>
 						})}
 					</div>
