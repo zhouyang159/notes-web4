@@ -79,7 +79,7 @@ const App = () => {
 	useEffect(() => {
 		didMount.current = true;
 
-		console.log(process.env.REACT_APP_VERSION, process.env.REACT_APP_BUILD_TIME);
+		console.log("V" + process.env.REACT_APP_VERSION, process.env.REACT_APP_BUILD_TIME);
 		console.log(process.env);
 		console.log(window.location.hostname);
 		console.log(window.location.port);
