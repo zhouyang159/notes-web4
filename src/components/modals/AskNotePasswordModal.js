@@ -49,7 +49,7 @@ const AskNotePasswordModal = (props, ref) => {
          <Form.Item
             label="Note Password"
          >
-            <Input.Password autocomlete="new-password" ref={inputRef} value={password} onChange={(e) => setPassword(e.target.value)} onPressEnter={submit} />
+            <Input.Password ref={inputRef} value={password} onChange={(e) => setPassword(e.target.value)} onPressEnter={submit} />
          </Form.Item>
       </Form>
    </Modal>
