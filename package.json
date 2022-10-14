@@ -1,6 +1,6 @@
 {
   "name": "notes-web2",
-  "version": "22.10.12.1",
+  "version": "22.10.12.3",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",

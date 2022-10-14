@@ -181,20 +181,22 @@ const Main = (props, ref) => {
 	}, [getProfile]);
 
 
-	return <div onClick={(e) => {
-		// 5 min timeout for no modify
-		if (profile?.hasNotePassword) {
-			clearTimeout(lockNoteTimer);
-			lockNoteTimer = setTimeout(() => {
-				setProfile((pre) => {
-					return {
-						...pre,
-						lockNote: true,
-					}
-				});
-			}, 5 * 60 * 1000);
-		}
-	}}>
+	return <div
+		className="Main"
+		onClick={(e) => {
+			// 5 min timeout for no modify
+			if (profile?.hasNotePassword) {
+				clearTimeout(lockNoteTimer);
+				lockNoteTimer = setTimeout(() => {
+					setProfile((pre) => {
+						return {
+							...pre,
+							lockNote: true,
+						}
+					});
+				}, 5 * 60 * 1000);
+			}
+		}}>
 		<Container>
 			<H1>
 				<div>
