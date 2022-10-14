@@ -12,7 +12,6 @@ const { SubMenu } = Menu;
 const getListStyle = isDraggingOver => ({
 	background: isDraggingOver ? "#" : "",
 	padding: "8px",
-	width: 250
 });
 
 const activeBackground = "#bfde3f";

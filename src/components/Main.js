@@ -148,17 +148,6 @@ const Main = (props, ref) => {
 			});
 	}, [username]);
 
-	const canNew = () => {
-		let can = true;
-		liveNoteList.forEach((item) => {
-			if (item.id === newId) {
-				can = false;
-			}
-		});
-
-		return can;
-	}
-
 	const getActiveNote = () => {
 		let ans = [...liveNoteList, ...deletedNoteList].find(item => item.active);
 		return ans;
