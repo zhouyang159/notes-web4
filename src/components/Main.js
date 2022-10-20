@@ -1,4 +1,5 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef } from "react";
+import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef, useMemo } from "react";
+import { useQuery } from "react-query";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
@@ -45,6 +46,13 @@ const reorder = (list, startIndex, endIndex) => {
 let timer = null;
 let lockNoteTimer = null;
 
+const fetchNotes = async () => {
+	console.log("Fetching notes");
+	const response = await axios.get("/note/findAll");
+	const notes = response.data;
+	return notes;
+}
+
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
 		refresh: () => {
@@ -62,6 +70,20 @@ const Main = (props, ref) => {
 	const [newId, setNewId] = useState(null);
 	const [liveNoteList, setLiveNoteList] = useState([]);
 	const [deletedNoteList, setDeletedNoteList] = useState([]);
+
+	const { isError, isSuccess, isLoadingNotes, data: allNotes, error } = useQuery(["notes"], fetchNotes, { staleTime: 3000 });
+	const [ liveNoteList2, deletedNoteList2 ] = useMemo(() => {
+		if (isLoadingNotes) {
+			return [ [], [] ];
+		}
+		const lives = allNotes?.filter((item) => {
+			return item.deleted === 0;
+		});
+		const deletes = allNotes?.filter((item) => {
+			return item.deleted === 1;
+		});
+		return [lives, deletes];
+	}, [allNotes, isLoadingNotes]);
 
 	const getNotes = (cb = () => { }) => {
 		setLoading(true);

@@ -33,7 +33,7 @@ const getItemStyle = (isDragging, draggableStyle, active) => {
 
 const DraggableItem = styled.div`
 	padding: 12px 8px;
-	border-bottom: 1px solid lightgray;
+	border-bottom: 1px solid lightgrey;
 	border-radius: 3px;
 	height: 66px;
 	overflow: hidden;
