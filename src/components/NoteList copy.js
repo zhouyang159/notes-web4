@@ -2,12 +2,11 @@ import React, { useState } from "react";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
-import { useMutation, useQueryClient } from "react-query";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./modals/SetNotePwModal";
-import { NOTES } from "../CONSTANT";
+import { useMutation } from "react-query";
 
 const { SubMenu } = Menu;
 
@@ -99,23 +98,100 @@ const ConfirmContent = styled.div`
 
 const NoteList = (props) => {
 	const { profile, getProfile, newId, liveNoteList = [], setLiveNoteList, deletedNoteList = [], setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
+	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 
-	const queryClient = useQueryClient();
-	const deleteMutation = useMutation(
-		(note) => {
-			return axios.delete(`/note/${note.id}`).catch((err) => {
-				message.error("delete note error");
-				console.log(err);
+	const defaultNoteList = () => {
+		if (newId == null) {
+			// newId is null represent that we already create a new note in DB, so we can delete it from DB
+			//delete server side empty note.
+			liveNoteList.forEach(item => {
+				if (item.title === "New Note") {
+					axios.delete(`/note/${item.id}`).catch((err) => {
+						message.error("delete note error");
+						console.log(err);
+					});
+				}
 			});
-		},
-		{
-			onSuccess: () => {
-				queryClient.invalidateQueries([NOTES]);
-				queryClient.refetchQueries(NOTES, { force: true });
-			},
 		}
-	);
 
+		setLiveNoteList((pre) => {
+			return pre.filter((item) => item.title !== "New Note").map((item) => {
+				item.active = false;
+				return item;
+			});
+		});
+		setDeletedNoteList((pre) => {
+			return pre.map((item) => {
+				item.active = false;
+				return item;
+			});
+		});
+	}
+
+	const handleClickLiveNote = (note) => {
+		if (note.title === "New Note") {
+			return;
+		}
+
+		defaultNoteList();
+		setTimeout(() => {
+			setLiveNoteList((pre) => {
+				return pre.map((item) => {
+					if (item.id === note.id) {
+						item.active = true;
+					}
+					return item;
+				});
+			});
+		}, 20);
+	}
+
+	const handleClickDeletedNote = (note) => {
+		defaultNoteList();
+		setTimeout(() => {
+			setDeletedNoteList((pre) => {
+				return pre.map((item) => {
+					if (item.id === note.id) {
+						item.active = true;
+					}
+					return item;
+				});
+			});
+		}, 20);
+	}
+
+	const getSelectedKeys = () => {
+		let find = [...liveNoteList, ...deletedNoteList].find(note => note.active);
+		if (find === undefined) {
+			return [];
+		} else {
+			return [find.id];
+		}
+	}
+
+	const hideContextMenu = () => {
+		document.getElementById("Menu").style.display = "none";
+		document.getElementById("Menu2").style.display = "none";
+	}
+
+	const getLockIcon = (note) => {
+		if (note.encrypt) {
+			if (profile?.lockNote) {
+				return <LockFilled />
+			} else {
+				return <span className="iconfont icon-unlocked"></span>
+			}
+		} else {
+			return null;
+		}
+	}
+
+	const activeNote = [...liveNoteList, ...deletedNoteList].find((item) => {
+		if (item.active) {
+			return true;
+		}
+		return false;
+	});
 
 
 	return <>
@@ -124,16 +200,49 @@ const NoteList = (props) => {
 				className="item"
 				onClick={async () => {
 					const moveToTrash = () => {
+						if (activeNote.title === "New Note") {
+							axios.delete(`/note/${activeNote.id}`).catch((err) => {
+								console.log(err);
+							});
+							setLiveNoteList(pre => {
+								return pre.filter(item => item.title !== "New Note");
+							});
+						} else {
 
 
-						deleteMutation.mutate({});
 
+							axios.delete(`/note/fake/${activeNote.id}`).then(() => {
+								let divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
+								const element = document.getElementById(divId);
+								element.style.background = "red";
 
+								setTimeout(() => {
+									element.style.transition = "all 0.4s";
+									element.style.padding = 0;
+									element.style.height = 0;
+									element.style.border = 0;
+								}, 10);
 
-
+								setTimeout(() => {
+									getNotes();
+								}, 400);
+							});
+						}
+						document.getElementById("Menu").style.display = "none";
 					}
 
-					moveToTrash();
+					if (activeNote.encrypt) {
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							moveToTrash();
+						} else {
+							// now is unlock status
+							moveToTrash();
+						}
+					} else {
+						moveToTrash();
+					}
 				}}
 			>
 				move to trash
@@ -142,13 +251,39 @@ const NoteList = (props) => {
 				className="item"
 				onClick={async () => {
 					if (profile?.hasNotePassword) {
+						const addLockOrRemoveLock = () => {
+							if (activeNote.encrypt) {
+								// remove lock
+								let newNote = {
+									...activeNote,
+									encrypt: false,
+								}
+								updateNoteToServer(newNote, getNotes);
+							} else {
+								// add lock
+								let newNote = {
+									...activeNote,
+									encrypt: true,
+								}
+								updateNoteToServer(newNote, getNotes);
+							}
+						}
 
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							addLockOrRemoveLock();
+						} else {
+							// now is unlock status
+							addLockOrRemoveLock();
+						}
 					} else {
 						// set new note password
+						setIsSetNotePwModalOpen(true);
 					}
 				}}
 			>
-				{true ? "remove lock" : "add lock"}
+				{activeNote?.encrypt ? "remove lock" : "add lock"}
 			</div>
 		</ContextMenu>
 		<ContextMenu id="Menu2">
@@ -166,7 +301,17 @@ const NoteList = (props) => {
 						okButtonProps: { danger: true },
 						cancelText: "Cancel",
 						onOk: () => {
+							axios
+								.delete(`/note/${activeNote.id}`)
+								.then(() => {
+									message.success("delete success");
+									getNotes();
+								})
+								.catch(() => {
+									message.error("something wrong");
+								});
 
+							document.getElementById("Menu2").style.display = "none";
 						}
 					});
 				}}
@@ -176,7 +321,13 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
+					let newNote = {
+						...activeNote,
+						deleted: 0,
+					}
+					updateNoteToServer(newNote, getNotes);
 
+					document.getElementById("Menu2").style.display = "none";
 				}}
 			>
 				recover
@@ -186,11 +337,12 @@ const NoteList = (props) => {
 			<Menu
 				defaultOpenKeys={["sub1", "sub2"]}
 				mode="inline"
-				selectedKeys={[]}
+				selectedKeys={getSelectedKeys()}
 			>
 				<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
 					<DragDropContext
 						onDragStart={() => {
+							defaultNoteList();
 						}}
 						onDragEnd={(result) => {
 							if (!result.destination) {
@@ -235,31 +387,12 @@ const NoteList = (props) => {
 														note.active
 													)}
 													onClick={() => {
-														queryClient.setQueryData(NOTES, oldNoteList => {
-															const arr = oldNoteList
-																.map((item) => {
-																	return {
-																		...item,
-																		active: false,
-																	}
-																})
-																.map((item) => {
-																	if (item.id === note.id) {
-																		return {
-																			...item,
-																			active: true,
-																		}
-																	}
-																	return item;
-																});
-
-															return arr;
-														})
-
+														handleClickLiveNote(note);
 													}}
 													onContextMenu={(e) => {
-														// hideContextMenu();
-														// handleClickLiveNote(note);
+														hideContextMenu();
+
+														handleClickLiveNote(note);
 
 														e.preventDefault();
 														const clickX = e.clientX;
@@ -272,7 +405,7 @@ const NoteList = (props) => {
 												>
 													<div className="title">{note.title}</div>
 													<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
-													<div className="lock_icon">icon</div>
+													<div className="lock_icon">{getLockIcon(note)}</div>
 												</DraggableItem>
 											)}
 										</Draggable>
@@ -306,8 +439,12 @@ const NoteList = (props) => {
 									note.active
 								)}
 								onClick={() => {
+									handleClickDeletedNote(note);
 								}}
 								onContextMenu={(e) => {
+									hideContextMenu();
+
+									handleClickDeletedNote(note);
 
 									e.preventDefault();
 									const clickX = e.clientX;
@@ -321,13 +458,34 @@ const NoteList = (props) => {
 							>
 								<div className="title">{note.title}</div>
 								<div className="date">{remainingDay} days</div>
-								<div className="lock_icon">icon</div>
+								<div className="lock_icon">{getLockIcon(note)}</div>
 							</DraggableItem>
 						})}
 					</div>
 				</SubMenu>
 			</Menu>
 		</div >
+		{
+			isSetNotePwModalOpen && <SetNotePwModal
+				isModalOpen={isSetNotePwModalOpen}
+				closeModal={() => {
+					setIsSetNotePwModalOpen(false);
+				}}
+				onSuccess={() => {
+					message.success("set note password success");
+					setTimeout(() => {
+						setIsSetNotePwModalOpen(false);
+						getProfile();
+						// add lock
+						let newNote = {
+							...activeNote,
+							encrypt: true,
+						}
+						updateNoteToServer(newNote, getNotes);
+					}, 600);
+				}}
+			></SetNotePwModal>
+		}
 	</>
 };
 
