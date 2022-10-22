@@ -48,7 +48,6 @@ let timer = null;
 let lockNoteTimer = null;
 
 const fetchNotes = async (context) => {
-	console.log('context: ', context);
 	console.log("Fetching notes");
 	const response = await axios.get("/note/findAll");
 
@@ -56,10 +55,9 @@ const fetchNotes = async (context) => {
 		return {
 			...note,
 			content: JSON.parse(note.content),
-			updateTime: moment(note.updateTime),
 			createTime: moment(note.createTime),
+			updateTime: moment(note.updateTime),
 			deleteTime: moment(note.deleteTime),
-			active: false,
 		}
 	});
 	let lives = list.filter((item) => item.deleted === 0);
@@ -77,6 +75,7 @@ const Main = (props, ref) => {
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
+	const [activeNote, setActiveNote] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 	// const [liveNoteList, setLiveNoteList] = useState([]);
 
@@ -220,6 +219,8 @@ const Main = (props, ref) => {
 			}}>
 				<NoteListContainer>
 					<NoteList
+						activeNote={activeNote}
+						setActiveNote={setActiveNote}
 						// profile={profile}
 						// getProfile={() => {}}
 						// newId={newId}

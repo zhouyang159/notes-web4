@@ -98,12 +98,12 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { profile, getProfile, newId, liveNoteList = [], setLiveNoteList, deletedNoteList = [], setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
+	const { activeNote, setActiveNote, profile, getProfile, newId, liveNoteList = [], setLiveNoteList, deletedNoteList = [], setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
 
 	const queryClient = useQueryClient();
 	const deleteMutation = useMutation(
 		(note) => {
-			return axios.delete(`/note/${note.id}`).catch((err) => {
+			return axios.delete(`/note/toTrash/${note.id}`).catch((err) => {
 				message.error("delete note error");
 				console.log(err);
 			});
@@ -117,30 +117,19 @@ const NoteList = (props) => {
 	);
 
 
-
 	return <>
 		<ContextMenu id="Menu">
 			<div
 				className="item"
-				onClick={async () => {
-					const moveToTrash = () => {
-
-
-						deleteMutation.mutate({});
-
-
-
-
-					}
-
-					moveToTrash();
+				onClick={() => {
+					deleteMutation.mutate(activeNote);
 				}}
 			>
 				move to trash
 			</div>
 			<div
 				className="item"
-				onClick={async () => {
+				onClick={() => {
 					if (profile?.hasNotePassword) {
 
 					} else {
@@ -232,34 +221,13 @@ const NoteList = (props) => {
 													style={getItemStyle(
 														snapshot.isDragging,
 														provided.draggableProps.style,
-														note.active
+														note.id === activeNote?.id,
 													)}
 													onClick={() => {
-														queryClient.setQueryData(NOTES, oldNoteList => {
-															const arr = oldNoteList
-																.map((item) => {
-																	return {
-																		...item,
-																		active: false,
-																	}
-																})
-																.map((item) => {
-																	if (item.id === note.id) {
-																		return {
-																			...item,
-																			active: true,
-																		}
-																	}
-																	return item;
-																});
-
-															return arr;
-														})
-
+														setActiveNote(note);
 													}}
 													onContextMenu={(e) => {
-														// hideContextMenu();
-														// handleClickLiveNote(note);
+														setActiveNote(note);
 
 														e.preventDefault();
 														const clickX = e.clientX;
@@ -303,7 +271,7 @@ const NoteList = (props) => {
 								style={getItemStyle(
 									false,
 									{},
-									note.active
+									note.id === activeNote?.id,
 								)}
 								onClick={() => {
 								}}
