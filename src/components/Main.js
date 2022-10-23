@@ -232,55 +232,55 @@ const Main = (props, ref) => {
 					// updateNoteToServer={updateNoteToServer}
 					></NoteList>
 				</NoteListContainer>
-				{/* <div>
+				<div>
 					{
-						getActiveNote() &&
+						activeNote &&
 						<Detail
-							profile={profile}
-							setProfile={setProfile}
-							newId={newId}
-							curNote={getActiveNote()}
+							// profile={profile}
+							// setProfile={setProfile}
+							// newId={newId}
+							activeNote={activeNote}
 							createOrUpdateNote={(note) => {
-								let findIdx = -1;
-								liveNoteList.find((item, index) => {
-									if (item.id === note.id) {
-										findIdx = index;
-										return true;
-									}
-									return false;
-								});
+								// let findIdx = -1;
+								// liveNoteList.find((item, index) => {
+								// 	if (item.id === note.id) {
+								// 		findIdx = index;
+								// 		return true;
+								// 	}
+								// 	return false;
+								// });
 
-								let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
-									item.number = index;
-									item.active = false;
+								// let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
+								// 	item.number = index;
+								// 	item.active = false;
 
-									if (item.id === note.id) {
-										return {
-											...item,
-											...note,
-											active: true,
-										}
-									}
-									return item;
-								})
-								setLiveNoteList(newNoteList);
+								// 	if (item.id === note.id) {
+								// 		return {
+								// 			...item,
+								// 			...note,
+								// 			active: true,
+								// 		}
+								// 	}
+								// 	return item;
+								// })
+								// setLiveNoteList(newNoteList);
 
-								clearTimeout(timer);
-								timer = setTimeout(() => {
-									if (note.id === newId) {
-										// create note
-										setNewId(null);
-										createNoteToServer(note);
-									} else {
-										// update note
-										updateNoteToServer(note);
-									}
-								}, 700);
+								// clearTimeout(timer);
+								// timer = setTimeout(() => {
+								// 	if (note.id === newId) {
+								// 		// create note
+								// 		setNewId(null);
+								// 		createNoteToServer(note);
+								// 	} else {
+								// 		// update note
+								// 		updateNoteToServer(note);
+								// 	}
+								// }, 700);
 							}}
 						>
 						</Detail>
 					}
-				</div> */}
+				</div>
 			</Body>
 		</Container>
 	</div>

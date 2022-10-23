@@ -32,7 +32,7 @@ const EditorContainer = styled.div`
 `;
 
 const Detail = (props) => {
-	const { profile, setProfile, newId, createOrUpdateNote, curNote } = props;
+	const { profile, setProfile, newId, createOrUpdateNote, activeNote } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
 	const [textChangeHandler, setTextChangeHandler] = useState(() => {
@@ -61,7 +61,7 @@ const Detail = (props) => {
 			}
 
 			let newNote = {
-				...curNote,
+				...activeNote,
 				title: title,
 				content: quill.getContents(),
 				updateTime: moment(),
@@ -113,24 +113,23 @@ const Detail = (props) => {
 			theme: "snow",  // or "bubble"，
 		});
 		setQuill(quill);
-		quill.setContents(curNote.content);
+		quill.setContents(activeNote.content);
 		quill.focus();
 
 		let handler = getTextChangeHandler(quill);
 		quill.on("text-change", handler);
 		setTextChangeHandler(() => handler);
 
-		if (curNote.deleted === 1) {
+		if (activeNote.deleted === 1) {
 			quill.enable(false);
-		}
+		} 
 
 		didMount.current = true;
 	}, []);
 
-
 	return <DetailContainer className="Detail">
 		{
-			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
+			activeNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<Result
 					icon={<LockFilled />}
 					title="This note had been lock"
