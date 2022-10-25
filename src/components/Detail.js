@@ -32,7 +32,7 @@ const EditorContainer = styled.div`
 `;
 
 const Detail = (props) => {
-	const { profile, setProfile, newId, createOrUpdateNote, activeNote } = props;
+	const { profile, setProfile, onContentChange, activeNote } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
 	const [textChangeHandler, setTextChangeHandler] = useState(() => {
@@ -66,8 +66,7 @@ const Detail = (props) => {
 				content: quill.getContents(),
 				updateTime: moment(),
 			}
-
-			createOrUpdateNote(newNote, newId);
+			onContentChange(newNote);
 		}
 	}
 
@@ -75,14 +74,18 @@ const Detail = (props) => {
 		if (didMount.current === false) {
 			return;
 		}
-		if (newId === null) {
-			// when note create finish, we bind a new handler to quill
-			quill.off("text-change", textChangeHandler);
-			let newHandler = getTextChangeHandler(quill);
-			quill.on("text-change", newHandler);
-			setTextChangeHandler(() => newHandler);
+		quill.off("text-change", textChangeHandler);
+		quill.setContents(activeNote.content);
+
+		let newHandler = getTextChangeHandler(quill);
+		setTextChangeHandler(() => newHandler);
+		quill.on("text-change", newHandler);
+		if (activeNote.deleted === 1) {
+			quill.enable(false);
+		} else {
+			quill.enable(true);
 		}
-	}, [newId]);
+	}, [activeNote]);
 
 	useEffect(() => {
 		let toolbarOptions = [
@@ -122,7 +125,7 @@ const Detail = (props) => {
 
 		if (activeNote.deleted === 1) {
 			quill.enable(false);
-		} 
+		}
 
 		didMount.current = true;
 	}, []);

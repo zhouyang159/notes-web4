@@ -1,5 +1,6 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "react-query";
+import { debounce } from "debounce";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
@@ -10,7 +11,8 @@ import NoteList from "./NoteList";
 import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
-import { NOTES } from "../CONSTANT.js";
+import { PROFILE, NOTES } from "../CONSTANT.js";
+import { fetchNotes } from "../API";
 
 
 const Container = styled.div`
@@ -47,24 +49,6 @@ const reorder = (list, startIndex, endIndex) => {
 let timer = null;
 let lockNoteTimer = null;
 
-const fetchNotes = async (context) => {
-	console.log("Fetching notes");
-	const response = await axios.get("/note/findAll");
-
-	let list = response.data.map((note) => {
-		return {
-			...note,
-			content: JSON.parse(note.content),
-			createTime: moment(note.createTime),
-			updateTime: moment(note.updateTime),
-			deleteTime: moment(note.deleteTime),
-		}
-	});
-	let lives = list.filter((item) => item.deleted === 0);
-	return lives;
-}
-
-
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
 		refresh: () => {
@@ -77,10 +61,9 @@ const Main = (props, ref) => {
 	});
 	const [activeNote, setActiveNote] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
-	// const [liveNoteList, setLiveNoteList] = useState([]);
 
 	const queryClient = useQueryClient();
-	const { data: profile } = useQuery(["profile"], async () => {
+	const { data: profile } = useQuery([PROFILE], async () => {
 		const response = await axios.get(`/user/${username}/profile`);
 
 		let profile = response.data;
@@ -92,8 +75,6 @@ const Main = (props, ref) => {
 		}
 	});
 
-	const { isLoadingNotes, data: liveNoteList } = useQuery([NOTES], fetchNotes, { staleTime: 3000 });
-	console.log('liveNoteList: ', liveNoteList);
 	const addNoteMutation = useMutation(
 		(newNote) => {
 			let content = JSON.stringify(newNote.content);
@@ -109,11 +90,69 @@ const Main = (props, ref) => {
 			});
 		},
 		{
+			onMutate: async (newNote) => {
+				await queryClient.cancelQueries([NOTES]);
+				const previousNoteList = queryClient.getQueryData([NOTES]);
+				queryClient.setQueryData([NOTES], old => [newNote, ...old]);
+				setActiveNote(newNote);
+
+				return { previousNoteList };
+			},
+			onError: (err, newNote, context) => {
+				queryClient.setQueryData([NOTES], context.previousNoteList);
+			},
 			onSuccess: () => {
-				queryClient.refetchQueries(NOTES, { force: true });
+				queryClient.invalidateQueries(NOTES);
 			}
 		}
 	);
+
+	const updateNoteMutation = useMutation(
+		(modifyNote) => {
+			let data = {
+				...modifyNote,
+				number: 0,
+				content: JSON.stringify(modifyNote.content),
+			}
+
+			return axios.put("/note/reorder", data);
+		},
+		{
+			onMutate: async (modifyNote) => {
+				await queryClient.cancelQueries([NOTES]);
+				const previousNoteList = queryClient.getQueryData([NOTES]);
+
+				queryClient.setQueryData([NOTES], old => {
+					let arr = old
+						.filter((item) => item.id !== modifyNote.id)
+						.map((item, idx) => {
+							return {
+								...item,
+								number: idx + 1,
+							}
+						});
+
+					return [
+						{
+							...modifyNote,
+							number: 0,
+						},
+						...arr,
+					]
+				});
+
+				return { previousNoteList };
+			},
+			onSuccess: () => {
+				queryClient.invalidateQueries(NOTES);
+			}
+		}
+	);
+
+	const handleContentChange = debounce((modifyNote) => {
+		console.log(111, modifyNote);
+		updateNoteMutation.mutate(modifyNote);
+	}, 1000);
 
 	return <div
 		className="Main"
@@ -139,7 +178,7 @@ const Main = (props, ref) => {
 					>
 						Notes
 					</span>
-					{isLoadingNotes && <SyncOutlined spin style={{ fontSize: "16px" }} />}
+					{true && <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
 				<div>
 					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>
@@ -162,10 +201,6 @@ const Main = (props, ref) => {
 									}
 
 									addNoteMutation.mutate(newNote);
-
-
-
-
 								}}
 							></EditFilled>
 						}
@@ -221,12 +256,9 @@ const Main = (props, ref) => {
 					<NoteList
 						activeNote={activeNote}
 						setActiveNote={setActiveNote}
-						// profile={profile}
-						// getProfile={() => {}}
-						// newId={newId}
-						liveNoteList={liveNoteList}
+					// profile={profile}
+					// getProfile={() => {}}
 					// setLiveNoteList={() => {}}
-					// deletedNoteList={[]}
 					// setDeletedNoteList={setDeletedNoteList}
 					// getNotes={() => {}}
 					// updateNoteToServer={updateNoteToServer}
@@ -238,9 +270,12 @@ const Main = (props, ref) => {
 						<Detail
 							// profile={profile}
 							// setProfile={setProfile}
-							// newId={newId}
 							activeNote={activeNote}
-							createOrUpdateNote={(note) => {
+							onContentChange={(newNote) => {
+								handleContentChange(newNote);
+
+
+
 								// let findIdx = -1;
 								// liveNoteList.find((item, index) => {
 								// 	if (item.id === note.id) {
