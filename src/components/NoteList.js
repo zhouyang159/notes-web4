@@ -157,7 +157,7 @@ const NoteList = (props) => {
 		},
 		{
 			onSuccess: () => {
-				queryClient.refetchQueries([NOTES], { force: true });
+				queryClient.invalidateQueries([NOTES]);
 				setActiveNote(null);
 			}
 		}

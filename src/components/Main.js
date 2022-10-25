@@ -49,6 +49,7 @@ const reorder = (list, startIndex, endIndex) => {
 let timer = null;
 let lockNoteTimer = null;
 
+
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
 		refresh: () => {
@@ -118,31 +119,6 @@ const Main = (props, ref) => {
 			return axios.put("/note/reorder", data);
 		},
 		{
-			onMutate: async (modifyNote) => {
-				await queryClient.cancelQueries([NOTES]);
-				const previousNoteList = queryClient.getQueryData([NOTES]);
-
-				queryClient.setQueryData([NOTES], old => {
-					let arr = old
-						.filter((item) => item.id !== modifyNote.id)
-						.map((item, idx) => {
-							return {
-								...item,
-								number: idx + 1,
-							}
-						});
-
-					return [
-						{
-							...modifyNote,
-							number: 0,
-						},
-						...arr,
-					]
-				});
-
-				return { previousNoteList };
-			},
 			onSuccess: () => {
 				queryClient.invalidateQueries(NOTES);
 			}
@@ -150,9 +126,9 @@ const Main = (props, ref) => {
 	);
 
 	const handleContentChange = debounce((modifyNote) => {
-		console.log(111, modifyNote);
 		updateNoteMutation.mutate(modifyNote);
 	}, 1000);
+
 
 	return <div
 		className="Main"
@@ -271,9 +247,27 @@ const Main = (props, ref) => {
 							// profile={profile}
 							// setProfile={setProfile}
 							activeNote={activeNote}
-							onContentChange={(newNote) => {
-								handleContentChange(newNote);
+							onContentChange={(modifyNote) => {
+								queryClient.setQueryData([NOTES], old => {
+									let arr = old
+										.filter((item) => item.id !== modifyNote.id)
+										.map((item, idx) => {
+											return {
+												...item,
+												number: idx + 1,
+											}
+										});
 
+									return [
+										{
+											...modifyNote,
+											number: 0,
+										},
+										...arr,
+									]
+								});
+
+								handleContentChange(modifyNote);
 
 
 								// let findIdx = -1;
