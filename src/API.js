@@ -18,4 +18,13 @@ export const fetchNotes = async (context) => {
 	return list;
 }
 
+export const fetchNoteById = async (id) => {
+	console.log("Fetching note by id: " + id);
 
+	const res = await axios.get(`/note/${id}`);
+	const data = {
+		...res.data,
+		content: JSON.parse(res.data.content),
+	}
+	return data;
+}

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useQuery } from "react-query"; 
+import { useQuery } from "react-query";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
@@ -101,7 +101,7 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { activeNote, setActiveNote, profile, getProfile, setLiveNoteList, setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
+	const { activeNoteId, setActiveNoteId, profile, setLiveNoteList } = props;
 
 	let { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const liveNoteList = noteList.filter((item) => item.deleted === 0);
@@ -109,31 +109,16 @@ const NoteList = (props) => {
 
 
 	const queryClient = useQueryClient();
-	const updateNoteMutation = useMutation(
-		(newNote) => {
-			return axios.put("/note/reorder", newNote);
-		},
-		{
-			onSuccess: () => {
-				queryClient.invalidateQueries([NOTES]);
-			}
-		}
-	);
 	const moveToTrashMutation = useMutation(
-		(note) => {
-			return axios.delete(`/note/toTrash/${note.id}`).catch((err) => {
-				message.error("move to trash error");
-				console.log(err);
-			});
+		(id) => {
+			return axios.delete(`/note/toTrash/${id}`);
 		},
 		{
 			onSuccess: async () => {
-				queryClient.invalidateQueries([NOTES]);
-
 				// active the next one note
 				let findIdx = -1;
 				liveNoteList.find((item, idx) => {
-					if (activeNote.id === item.id) {
+					if (activeNoteId === item.id) {
 						findIdx = idx;
 						return true;
 					}
@@ -142,23 +127,48 @@ const NoteList = (props) => {
 
 				let newActiveNote = liveNoteList[findIdx + 1];
 				if (newActiveNote) {
-					setActiveNote(newActiveNote);
+					setActiveNoteId(newActiveNote.id);
 				} else {
-					setActiveNote(null);
+					setActiveNoteId(null);
 				}
+
+				queryClient.invalidateQueries([NOTES]);
 			},
 		}
 	);
+	const recoverNoteMutation = useMutation(
+		(id) => {
+			const find = deletedNoteList.find((item) => {
+				if (item.id === id) {
+					return true;
+				}
+				return false;
+			});
+
+			const newNote = {
+				...find,
+				content: JSON.stringify(find.content),
+				deleted: 0,
+				updateTime: moment(),
+			}
+			return axios.put("/note/reorder", newNote);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+				setActiveNoteId(null);
+			}
+		}
+	);
 	const deleteNoteMutation = useMutation(
-		(note) => {
-			return axios.delete(`/note/${note.id}`).then(() => {
+		(id) => {
+			return axios.delete(`/note/${id}`).then(() => {
 				message.success("delete success");
 			})
 		},
 		{
 			onSuccess: () => {
-				queryClient.invalidateQueries([NOTES]);
-				setActiveNote(null);
+				queryClient.invalidateQueries([NOTES], { exact: true });
 			}
 		}
 	);
@@ -175,7 +185,7 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
-					moveToTrashMutation.mutate(activeNote);
+					moveToTrashMutation.mutate(activeNoteId);
 				}}
 			>
 				move to trash
@@ -197,13 +207,7 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
-					const newNote = {
-						...activeNote,
-						content: JSON.stringify(activeNote.content),
-						deleted: 0,
-						updateTime: moment(),
-					}
-					updateNoteMutation.mutate(newNote);
+					recoverNoteMutation.mutate(activeNoteId);
 				}}
 			>
 				recover
@@ -222,7 +226,11 @@ const NoteList = (props) => {
 						okButtonProps: { danger: true },
 						cancelText: "Cancel",
 						onOk: () => {
-							deleteNoteMutation.mutate(activeNote);
+							deleteNoteMutation.mutate(activeNoteId, {
+								onSuccess: () => {
+									setActiveNoteId(null);
+								}
+							});
 						}
 					});
 				}}
@@ -280,28 +288,28 @@ const NoteList = (props) => {
 													style={getItemStyle(
 														snapshot.isDragging,
 														provided.draggableProps.style,
-														note.id === activeNote?.id,
+														note.id === activeNoteId
 													)}
 													onClick={() => {
-														const find = liveNoteList.find((item) => {
-															if (item.id === activeNote?.id) {
-																return true;
-															}
-															return false;
-														});
-														if (find?.title === "New Note") {
-															// this note's content is empty, we delete it forever
-															axios.delete(`/note/${activeNote.id}`).then(() => {
-																queryClient.invalidateQueries([NOTES]);
-															})
-														}
+														// const find = liveNoteList.find((item) => {
+														// 	if (item.id === activeNoteId) {
+														// 		return true;
+														// 	}
+														// 	return false;
+														// });
+														// if (find?.title === "New Note") {
+														// 	// this note's content is empty, we delete it forever
+														// 	axios.delete(`/note/${activeNoteId}`).then(() => {
+														// 		queryClient.invalidateQueries([NOTES]);
+														// 	})
+														// }
 
-														setActiveNote(note);
+														setActiveNoteId(note.id);
 													}}
 													onContextMenu={(e) => {
 														e.preventDefault();
 														hideContextMenu();
-														setActiveNote(note);
+														setActiveNoteId(note.id);
 
 														const clickX = e.clientX;
 														const clickY = e.clientY;
@@ -344,14 +352,14 @@ const NoteList = (props) => {
 								style={getItemStyle(
 									false,
 									{},
-									note.id === activeNote?.id,
+									note.id === activeNoteId,
 								)}
 								onClick={() => {
-									setActiveNote(note);
+									setActiveNoteId(note.id);
 								}}
 								onContextMenu={(e) => {
 									hideContextMenu();
-									setActiveNote(note);
+									setActiveNoteId(note.id);
 
 									e.preventDefault();
 									const clickX = e.clientX;

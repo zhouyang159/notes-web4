@@ -7,6 +7,9 @@ import "quill/dist/quill.snow.css"
 import moment from "moment";
 import { Input, message, } from "antd";
 import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { NOTES } from "../CONSTANT";
+import { fetchNotes, fetchNoteById } from "../API";
 
 
 const DetailContainer = styled.div`
@@ -32,15 +35,50 @@ const EditorContainer = styled.div`
 `;
 
 const Detail = (props) => {
-	const { profile, setProfile, onContentChange, activeNote } = props;
+	const { activeNoteId } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
-	const [textChangeHandler, setTextChangeHandler] = useState(() => {
+	const [oldTextChangeHandler, setOldTextChangeHandler] = useState(() => {
 		return () => { };
 	});
 
-	const getTextChangeHandler = (quill) => {
-		return () => {
+	const queryClient = useQueryClient();
+	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+	const patchNoteMutation = useMutation(
+		(newNote) => {
+			const data = {
+				...newNote,
+				content: JSON.stringify(newNote.content),
+			}
+			return axios.put("/note/reorder", data);
+		},
+		{
+			onMutate: (newNote) => {
+				queryClient.setQueryData([NOTES, activeNoteId], newNote);
+			},
+			onSuccess: () => {
+				queryClient.refetchQueries([NOTES], { exact: true });
+			}
+		}
+	);
+
+	const fillQuillContent = (quill) => {
+		if (!quill) {
+			return;
+		}
+		if (isLoading) {
+			return;
+		}
+
+		quill.off("text-change", oldTextChangeHandler);
+		quill.setContents(curNote.content);
+		if (curNote.deleted === 1) {
+			quill.enable(false);
+		} else {
+			quill.enable(true);
+		}
+
+		const newTextChangeHandler = () => {
 			let title = "";
 			let text = JSON.stringify(quill.getText(0, 200).trim());
 
@@ -61,31 +99,29 @@ const Detail = (props) => {
 			}
 
 			let newNote = {
-				...activeNote,
+				...curNote,
 				title: title,
 				content: quill.getContents(),
 				updateTime: moment(),
 			}
-			onContentChange(newNote);
+
+			patchNoteMutation.mutate(newNote);
+		}
+		setOldTextChangeHandler(() => newTextChangeHandler);
+
+		quill.on("text-change", newTextChangeHandler);
+		if (curNote.deleted === 1) {
+			quill.enable(false);
+		} else {
+			quill.enable();
+			quill.blur();
 		}
 	}
 
 	useEffect(() => {
-		if (didMount.current === false) {
-			return;
-		}
-		quill.off("text-change", textChangeHandler);
-		quill.setContents(activeNote.content);
-
-		let newHandler = getTextChangeHandler(quill);
-		setTextChangeHandler(() => newHandler);
-		quill.on("text-change", newHandler);
-		if (activeNote.deleted === 1) {
-			quill.enable(false);
-		} else {
-			quill.enable(true);
-		}
-	}, [activeNote]);
+		// 只有在切换note的时候，才跑这个 effect函数
+		fillQuillContent(quill);
+	}, [activeNoteId, isLoading]);
 
 	useEffect(() => {
 		let toolbarOptions = [
@@ -116,22 +152,13 @@ const Detail = (props) => {
 			theme: "snow",  // or "bubble"，
 		});
 		setQuill(quill);
-		quill.setContents(activeNote.content);
-		quill.focus();
-
-		let handler = getTextChangeHandler(quill);
-		quill.on("text-change", handler);
-		setTextChangeHandler(() => handler);
-
-		if (activeNote.deleted === 1) {
-			quill.enable(false);
-		}
+		fillQuillContent(quill);
 
 		didMount.current = true;
 	}, []);
 
 	return <DetailContainer className="Detail">
-		{
+		{/* {
 			activeNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<Result
 					icon={<LockFilled />}
@@ -162,7 +189,7 @@ const Detail = (props) => {
 					}}></Input>}
 				/>
 			</div>
-		}
+		} */}
 		<EditorContainer id="editor-container">
 		</EditorContainer>
 	</DetailContainer>

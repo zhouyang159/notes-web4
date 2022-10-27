@@ -60,7 +60,7 @@ const Main = (props, ref) => {
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
-	const [activeNote, setActiveNote] = useState(null);
+	const [activeNoteId, setActiveNoteId] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
 	const queryClient = useQueryClient();
@@ -78,10 +78,9 @@ const Main = (props, ref) => {
 
 	const addNoteMutation = useMutation(
 		(newNote) => {
-			let content = JSON.stringify(newNote.content);
 			let data = {
 				...newNote,
-				content: content,
+				content: JSON.stringify(newNote.content),
 			}
 
 			return axios.post("/note", data).then((res) => {
@@ -91,20 +90,16 @@ const Main = (props, ref) => {
 			});
 		},
 		{
-			onMutate: async (newNote) => {
-				await queryClient.cancelQueries([NOTES]);
-				const previousNoteList = queryClient.getQueryData([NOTES]);
-				queryClient.setQueryData([NOTES], old => [newNote, ...old]);
-				setActiveNote(newNote);
+			// onMutate: async (newNote) => {
+			// 	await queryClient.cancelQueries([NOTES]);
+			// 	const previousNoteList = queryClient.getQueryData([NOTES]);
+			// 	queryClient.setQueryData([NOTES], old => [newNote, ...old]);
 
-				return { previousNoteList };
-			},
-			onError: (err, newNote, context) => {
-				queryClient.setQueryData([NOTES], context.previousNoteList);
-			},
-			onSuccess: () => {
-				queryClient.invalidateQueries(NOTES);
-			}
+			// 	return { previousNoteList };
+			// },
+			// onError: (err, newNote, context) => {
+			// 	queryClient.setQueryData([NOTES], context.previousNoteList);
+			// },
 		}
 	);
 
@@ -176,7 +171,12 @@ const Main = (props, ref) => {
 										active: false,
 									}
 
-									addNoteMutation.mutate(newNote);
+									addNoteMutation.mutate(newNote, {
+										onSuccess: () => {
+											setActiveNoteId(newId);
+											queryClient.refetchQueries([NOTES]);
+										}
+									});
 								}}
 							></EditFilled>
 						}
@@ -230,44 +230,37 @@ const Main = (props, ref) => {
 			}}>
 				<NoteListContainer>
 					<NoteList
-						activeNote={activeNote}
-						setActiveNote={setActiveNote}
-					// profile={profile}
-					// getProfile={() => {}}
-					// setLiveNoteList={() => {}}
-					// setDeletedNoteList={setDeletedNoteList}
-					// getNotes={() => {}}
-					// updateNoteToServer={updateNoteToServer}
+						activeNoteId={activeNoteId}
+						setActiveNoteId={setActiveNoteId}
 					></NoteList>
 				</NoteListContainer>
 				<div>
 					{
-						activeNote &&
+						activeNoteId &&
 						<Detail
-							// profile={profile}
-							// setProfile={setProfile}
-							activeNote={activeNote}
+							activeNoteId={activeNoteId}
 							onContentChange={(modifyNote) => {
-								queryClient.setQueryData([NOTES], old => {
-									let arr = old
-										.filter((item) => item.id !== modifyNote.id)
-										.map((item, idx) => {
-											return {
-												...item,
-												number: idx + 1,
-											}
-										});
+								console.log('modifyNote: ', modifyNote);
+								// queryClient.setQueryData([NOTES], old => {
+								// 	let arr = old
+								// 		.filter((item) => item.id !== modifyNote.id)
+								// 		.map((item, idx) => {
+								// 			return {
+								// 				...item,
+								// 				number: idx + 1,
+								// 			}
+								// 		});
 
-									return [
-										{
-											...modifyNote,
-											number: 0,
-										},
-										...arr,
-									]
-								});
+								// 	return [
+								// 		{
+								// 			...modifyNote,
+								// 			number: 0,
+								// 		},
+								// 		...arr,
+								// 	]
+								// });
 
-								handleContentChange(modifyNote);
+								// handleContentChange(modifyNote);
 
 
 								// let findIdx = -1;
