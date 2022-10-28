@@ -10,6 +10,7 @@ import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { NOTES } from "../CONSTANT";
 import { fetchNotes, fetchNoteById } from "../API";
+import { debounce } from "debounce";
 
 
 const DetailContainer = styled.div`
@@ -43,7 +44,7 @@ const Detail = (props) => {
 	});
 
 	const queryClient = useQueryClient();
-	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
 			const data = {
@@ -53,30 +54,20 @@ const Detail = (props) => {
 			return axios.put("/note/reorder", data);
 		},
 		{
-			onMutate: (newNote) => {
-				queryClient.setQueryData([NOTES, activeNoteId], newNote);
-			},
 			onSuccess: () => {
 				queryClient.refetchQueries([NOTES], { exact: true });
 			}
 		}
 	);
 
-	const fillQuillContent = (quill) => {
-		if (!quill) {
-			return;
-		}
-		if (isLoading) {
-			return;
-		}
 
+	const fillQuillContent = (quill) => {
 		quill.off("text-change", oldTextChangeHandler);
-		quill.setContents(curNote.content);
-		if (curNote.deleted === 1) {
-			quill.enable(false);
-		} else {
-			quill.enable(true);
-		}
+		quill.setContents(curNote?.content);
+
+		const debouncePatchNote = debounce((newNote) => {
+			patchNoteMutation.mutate(newNote);
+		}, 700);
 
 		const newTextChangeHandler = () => {
 			let title = "";
@@ -104,13 +95,14 @@ const Detail = (props) => {
 				content: quill.getContents(),
 				updateTime: moment(),
 			}
+			queryClient.setQueryData([NOTES, activeNoteId], newNote);
 
-			patchNoteMutation.mutate(newNote);
+			debouncePatchNote(newNote);
 		}
 		setOldTextChangeHandler(() => newTextChangeHandler);
 
 		quill.on("text-change", newTextChangeHandler);
-		if (curNote.deleted === 1) {
+		if (curNote?.deleted === 1) {
 			quill.enable(false);
 		} else {
 			quill.enable();
@@ -119,7 +111,13 @@ const Detail = (props) => {
 	}
 
 	useEffect(() => {
-		// 只有在切换note的时候，才跑这个 effect函数
+		if (didMount.current === false || quill === null) {
+			return;
+		}
+		if (isLoading) {
+			return;
+		}
+		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
 		fillQuillContent(quill);
 	}, [activeNoteId, isLoading]);
 

@@ -124,7 +124,6 @@ const Main = (props, ref) => {
 		updateNoteMutation.mutate(modifyNote);
 	}, 1000);
 
-
 	return <div
 		className="Main"
 		onClick={(e) => {
