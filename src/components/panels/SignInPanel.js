@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Button, Input, message } from "antd";
 import styled from "styled-components";
+import md5 from "md5";
 
 const Container = styled.div`
   width: 300px;
@@ -44,7 +45,7 @@ const SignInPanel = (props) => {
 
 		setLoading(true);
 		axios
-			.post("/user/login", { username: username, password: password })
+			.post("/user/login", { username: username, password: md5(password) })
 			.then(({ status, data: token, msg }) => {
 				localStorage.setItem("token", token);
 				localStorage.setItem("username", username);

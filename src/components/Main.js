@@ -1,5 +1,5 @@
 import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef, useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "react-query";
+import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import { debounce } from "debounce";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
@@ -60,6 +60,18 @@ const Main = (props, ref) => {
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
+	const [isLoading, setIsLoading] = useState(false);
+	if (useIsFetching() !== 0) {
+		if (isLoading === false) {
+			setIsLoading(true);
+		}
+	} else {
+		if (isLoading === true) {
+			setTimeout(() => {
+				setIsLoading(false);
+			}, 1000);
+		}
+	}
 	const [activeNoteId, setActiveNoteId] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
@@ -103,26 +115,6 @@ const Main = (props, ref) => {
 		}
 	);
 
-	const updateNoteMutation = useMutation(
-		(modifyNote) => {
-			let data = {
-				...modifyNote,
-				number: 0,
-				content: JSON.stringify(modifyNote.content),
-			}
-
-			return axios.put("/note/reorder", data);
-		},
-		{
-			onSuccess: () => {
-				queryClient.invalidateQueries(NOTES);
-			}
-		}
-	);
-
-	const handleContentChange = debounce((modifyNote) => {
-		updateNoteMutation.mutate(modifyNote);
-	}, 1000);
 
 	return <div
 		className="Main"
@@ -148,7 +140,7 @@ const Main = (props, ref) => {
 					>
 						Notes
 					</span>
-					{true && <SyncOutlined spin style={{ fontSize: "16px" }} />}
+					{isLoading&& <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
 				<div>
 					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>

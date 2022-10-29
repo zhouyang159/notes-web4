@@ -101,7 +101,7 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { activeNoteId, setActiveNoteId, profile, setLiveNoteList } = props;
+	const { activeNoteId, setActiveNoteId } = props;
 
 	let { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const liveNoteList = noteList.filter((item) => item.deleted === 0);
@@ -109,6 +109,28 @@ const NoteList = (props) => {
 
 
 	const queryClient = useQueryClient();
+	const reorderMutation = useMutation(
+		(newList) => {
+			const data = newList.map(note => {
+				return {
+					...note,
+					content: JSON.stringify(note.content),
+				}
+			});
+
+			queryClient.cancelQueries([NOTES]);
+			queryClient.setQueryData([NOTES], (oldData) => {
+				return [...newList, ...deletedNoteList]
+			});
+
+			return axios.put("/note/updateLiveNoteList", data);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+			}
+		}
+	);
 	const moveToTrashMutation = useMutation(
 		(id) => {
 			return axios.delete(`/note/toTrash/${id}`);
@@ -193,11 +215,11 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
-					if (profile?.hasNotePassword) {
+					// if (profile?.hasNotePassword) {
 
-					} else {
-						// set new note password
-					}
+					// } else {
+					// 	// set new note password
+					// }
 				}}
 			>
 				{true ? "remove lock" : "add lock"}
@@ -253,21 +275,14 @@ const NoteList = (props) => {
 								return;
 							}
 
-							let ans = Array.from(liveNoteList);
-							const [removed] = ans.splice(result.source.index, 1);
-							ans.splice(result.destination.index, 0, removed);
-							for (let i = 0; i < ans.length; i++) {
-								ans[i].number = i;
+							let newLiveNoteList = Array.from(liveNoteList);
+							const [removed] = newLiveNoteList.splice(result.source.index, 1);
+							newLiveNoteList.splice(result.destination.index, 0, removed);
+							for (let i = 0; i < newLiveNoteList.length; i++) {
+								newLiveNoteList[i].number = i;
 							}
-							setLiveNoteList(ans);
 
-							ans = ans.map(note => {
-								return {
-									...note,
-									content: JSON.stringify(note.content),
-								}
-							});
-							axios.put("/note/updateLiveNoteList", ans);
+							reorderMutation.mutate(newLiveNoteList);
 						}}
 					>
 						<Droppable droppableId="droppable">

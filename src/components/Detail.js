@@ -9,7 +9,7 @@ import { Input, message, } from "antd";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { NOTES } from "../CONSTANT";
-import { fetchNotes, fetchNoteById } from "../API";
+import { fetchNoteById } from "../API";
 import { debounce } from "debounce";
 
 
@@ -44,7 +44,7 @@ const Detail = (props) => {
 	});
 
 	const queryClient = useQueryClient();
-	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
 			const data = {
