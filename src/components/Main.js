@@ -86,6 +86,7 @@ const Main = (props, ref) => {
 				lockNote: true,
 			}
 		}
+		return profile;
 	});
 
 	const addNoteMutation = useMutation(
@@ -96,22 +97,8 @@ const Main = (props, ref) => {
 			}
 
 			return axios.post("/note", data).then((res) => {
-				if (res.data) {
-					message.success("add note");
-				}
+				message.success("add note");
 			});
-		},
-		{
-			// onMutate: async (newNote) => {
-			// 	await queryClient.cancelQueries([NOTES]);
-			// 	const previousNoteList = queryClient.getQueryData([NOTES]);
-			// 	queryClient.setQueryData([NOTES], old => [newNote, ...old]);
-
-			// 	return { previousNoteList };
-			// },
-			// onError: (err, newNote, context) => {
-			// 	queryClient.setQueryData([NOTES], context.previousNoteList);
-			// },
 		}
 	);
 
@@ -140,7 +127,7 @@ const Main = (props, ref) => {
 					>
 						Notes
 					</span>
-					{isLoading&& <SyncOutlined spin style={{ fontSize: "16px" }} />}
+					{isLoading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
 				<div>
 					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>

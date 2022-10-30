@@ -8,7 +8,7 @@ import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./modals/SetNotePwModal";
-import { NOTES } from "../CONSTANT";
+import { NOTES, NEW_NOTE } from "../CONSTANT";
 import { fetchNotes } from "../API";
 
 
@@ -318,6 +318,20 @@ const NoteList = (props) => {
 														// 		queryClient.invalidateQueries([NOTES]);
 														// 	})
 														// }
+
+														liveNoteList.forEach(item => {
+															if (item.title === NEW_NOTE && item.id !== note.id) {
+																// this note's content is empty, we delete it forever
+																axios.delete(`/note/${item.id}`)
+																.then(() => {
+																	queryClient.refetchQueries([NOTES]);
+																})
+																.catch((err) => {
+																	message.error("delete note error");
+																	console.log(err);
+																});
+															}
+														});
 
 														setActiveNoteId(note.id);
 													}}
