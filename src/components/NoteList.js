@@ -235,8 +235,44 @@ const NoteList = (props) => {
 		<ContextMenu id="Menu">
 			<div
 				className="item"
-				onClick={() => {
-					moveToTrashMutation.mutate(activeNoteId);
+				onClick={async () => {
+					const moveToTrash = () => {
+						const divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
+						const element = document.getElementById(divId);
+						element.style.background = "red";
+						setTimeout(() => {
+							element.style.transition = "all 0.4s";
+							element.style.padding = 0;
+							element.style.height = 0;
+							element.style.border = 0;
+						}, 10);
+
+						setTimeout(() => {
+							if (activeNote.title === NEW_NOTE) {
+								queryClient.setQueryData([NOTES], (old) => {
+									return old.filter((item) => item.id !== activeNoteId);
+								});
+								axios.delete(`/note/${activeNoteId}`).catch((err) => {
+									console.log(err);
+								});
+							} else {
+								moveToTrashMutation.mutate(activeNoteId);
+							}
+						}, 400);
+					}
+
+					if (activeNote.encrypt) {
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							moveToTrash();
+						} else {
+							// now is unlock status
+							moveToTrash();
+						}
+					} else {
+						moveToTrash();
+					}
 				}}
 			>
 				move to trash
@@ -462,13 +498,13 @@ const NoteList = (props) => {
 					message.success("set note password success");
 					setTimeout(() => {
 						setIsSetNotePwModalOpen(false);
-						// getProfile();
-						// // add lock
-						// let newNote = {
-						// 	...activeNote,
-						// 	encrypt: true,
-						// }
-						// updateNoteToServer(newNote, getNotes);
+						queryClient.invalidateQueries([PROFILE]);
+						// add lock
+						let newNote = {
+							...activeNote,
+							encrypt: true,
+						}
+						patchNoteMutation.mutate(newNote);
 					}, 600);
 				}}
 			></SetNotePwModal>

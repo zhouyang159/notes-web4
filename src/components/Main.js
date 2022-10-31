@@ -1,6 +1,5 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef, useMemo } from "react";
+import React, { useState, forwardRef, useImperativeHandle, useRef } from "react";
 import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
-import { debounce } from "debounce";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
@@ -113,12 +112,12 @@ const Main = (props, ref) => {
 			if (profile?.hasNotePassword) {
 				clearTimeout(lockNoteTimer);
 				lockNoteTimer = setTimeout(() => {
-					// setProfile((pre) => {
-					// 	return {
-					// 		...pre,
-					// 		lockNote: true,
-					// 	}
-					// });
+					queryClient.setQueryData([PROFILE], (old) => {
+						return {
+							...old,
+							lockNote: true,
+						}
+					});
 				}, 5 * 60 * 1000);
 			}
 		}}>
@@ -231,6 +230,21 @@ const Main = (props, ref) => {
 				</div>
 			</Body>
 		</Container>
+		{
+			settingPanelOpen && <SettingPanel
+				profile={profile}
+				getProfile={() => {
+					queryClient.invalidateQueries([PROFILE]);
+				}}
+				getNotes={() => {
+					queryClient.invalidateQueries([NOTES]);
+				}}
+				isModalOpen={settingPanelOpen}
+				closeModal={() => {
+					setSettingPanelOpen(false);
+				}}
+			></SettingPanel>
+		}
 		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
 	</div>
 }
