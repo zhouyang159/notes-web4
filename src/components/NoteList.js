@@ -8,8 +8,8 @@ import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./modals/SetNotePwModal";
-import { NOTES, NEW_NOTE } from "../CONSTANT";
-import { fetchNotes } from "../API";
+import { NOTES, NEW_NOTE, PROFILE } from "../CONSTANT";
+import { fetchProfile, fetchNotes } from "../API";
 
 
 const { SubMenu } = Menu;
@@ -101,12 +101,15 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { activeNoteId, setActiveNoteId } = props;
+	const { activeNoteId, setActiveNoteId, validateNotePassword } = props;
 
-	let { data: noteList = [] } = useQuery([NOTES], fetchNotes);
+	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
+	const username = useState(() => localStorage.getItem("username"))[0];
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const liveNoteList = noteList.filter((item) => item.deleted === 0);
-	const deletedNoteList = noteList.filter((item) => item.deleted === 1);
-
+	const trashNoteList = noteList.filter((item) => item.deleted === 1);
+	const activeNote = noteList.find((item) => item.id === activeNoteId);
 
 	const queryClient = useQueryClient();
 	const reorderMutation = useMutation(
@@ -120,7 +123,7 @@ const NoteList = (props) => {
 
 			queryClient.cancelQueries([NOTES]);
 			queryClient.setQueryData([NOTES], (oldData) => {
-				return [...newList, ...deletedNoteList]
+				return [...newList, ...trashNoteList]
 			});
 
 			return axios.put("/note/updateLiveNoteList", data);
@@ -160,7 +163,7 @@ const NoteList = (props) => {
 	);
 	const recoverNoteMutation = useMutation(
 		(id) => {
-			const find = deletedNoteList.find((item) => {
+			const find = trashNoteList.find((item) => {
 				if (item.id === id) {
 					return true;
 				}
@@ -194,12 +197,38 @@ const NoteList = (props) => {
 			}
 		}
 	);
+	const patchNoteMutation = useMutation(
+		(newNote) => {
+			const data = {
+				...newNote,
+				content: JSON.stringify(newNote.content),
+			}
+			return axios.put("/note/reorder", data);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+			}
+		}
+	);
 
 	const hideContextMenu = () => {
 		const Menu = document.getElementById("Menu");
 		Menu.style.display = "none";
 		const Menu2 = document.getElementById("Menu2");
 		Menu2.style.display = "none";
+	}
+
+	const getLockIcon = (note) => {
+		if (note.encrypt) {
+			if (profile?.lockNote) {
+				return <LockFilled />
+			} else {
+				return <span className="iconfont icon-unlocked"></span>
+			}
+		} else {
+			return null;
+		}
 	}
 
 	return <>
@@ -214,15 +243,41 @@ const NoteList = (props) => {
 			</div>
 			<div
 				className="item"
-				onClick={() => {
-					// if (profile?.hasNotePassword) {
+				onClick={async () => {
+					if (profile?.hasNotePassword) {
+						const addLockOrRemoveLock = () => {
+							if (activeNote.encrypt) {
+								// remove lock
+								let newNote = {
+									...activeNote,
+									encrypt: false,
+								}
+								patchNoteMutation.mutate(newNote);
+							} else {
+								// add lock
+								let newNote = {
+									...activeNote,
+									encrypt: true,
+								}
+								patchNoteMutation.mutate(newNote);
+							}
+						}
 
-					// } else {
-					// 	// set new note password
-					// }
+						if (profile.lockNote) {
+							// now is lock status, let's unlock first
+							await validateNotePassword();
+							addLockOrRemoveLock();
+						} else {
+							// now is unlock status
+							addLockOrRemoveLock();
+						}
+					} else {
+						// set new note password
+						setIsSetNotePwModalOpen(true);
+					}
 				}}
 			>
-				{true ? "remove lock" : "add lock"}
+				{activeNote?.encrypt ? "remove lock" : "add lock"}
 			</div>
 		</ContextMenu>
 		<ContextMenu id="Menu2">
@@ -306,30 +361,17 @@ const NoteList = (props) => {
 														note.id === activeNoteId
 													)}
 													onClick={() => {
-														// const find = liveNoteList.find((item) => {
-														// 	if (item.id === activeNoteId) {
-														// 		return true;
-														// 	}
-														// 	return false;
-														// });
-														// if (find?.title === "New Note") {
-														// 	// this note's content is empty, we delete it forever
-														// 	axios.delete(`/note/${activeNoteId}`).then(() => {
-														// 		queryClient.invalidateQueries([NOTES]);
-														// 	})
-														// }
-
 														liveNoteList.forEach(item => {
 															if (item.title === NEW_NOTE && item.id !== note.id) {
 																// this note's content is empty, we delete it forever
 																axios.delete(`/note/${item.id}`)
-																.then(() => {
-																	queryClient.refetchQueries([NOTES]);
-																})
-																.catch((err) => {
-																	message.error("delete note error");
-																	console.log(err);
-																});
+																	.then(() => {
+																		queryClient.refetchQueries([NOTES]);
+																	})
+																	.catch((err) => {
+																		message.error("delete note error");
+																		console.log(err);
+																	});
 															}
 														});
 
@@ -350,7 +392,7 @@ const NoteList = (props) => {
 												>
 													<div className="title">{note.title}</div>
 													<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
-													<div className="lock_icon">icon</div>
+													<div className="lock_icon">{getLockIcon(note)}</div>
 												</DraggableItem>
 											)}
 										</Draggable>
@@ -366,7 +408,7 @@ const NoteList = (props) => {
 					<div
 						style={getListStyle(false)}
 					>
-						{deletedNoteList.map((note) => {
+						{trashNoteList.map((note) => {
 							let eraseDate = moment(note.deleteTime).add(11, "days");
 							let remainingDay = eraseDate.diff(moment(), "days");
 
@@ -402,13 +444,35 @@ const NoteList = (props) => {
 							>
 								<div className="title">{note.title}</div>
 								<div className="date">{remainingDay} days</div>
-								<div className="lock_icon">icon</div>
+								<div className="lock_icon">{getLockIcon(note)}</div>
 							</DraggableItem>
 						})}
 					</div>
 				</SubMenu>
 			</Menu>
 		</div >
+
+		{
+			isSetNotePwModalOpen && <SetNotePwModal
+				isModalOpen={isSetNotePwModalOpen}
+				closeModal={() => {
+					setIsSetNotePwModalOpen(false);
+				}}
+				onSuccess={() => {
+					message.success("set note password success");
+					setTimeout(() => {
+						setIsSetNotePwModalOpen(false);
+						// getProfile();
+						// // add lock
+						// let newNote = {
+						// 	...activeNote,
+						// 	encrypt: true,
+						// }
+						// updateNoteToServer(newNote, getNotes);
+					}, 600);
+				}}
+			></SetNotePwModal>
+		}
 	</>
 };
 

@@ -8,8 +8,8 @@ import moment from "moment";
 import { Input, message, } from "antd";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import { NOTES } from "../CONSTANT";
-import { fetchNoteById } from "../API";
+import { PROFILE, NOTES } from "../CONSTANT";
+import { fetchProfile, fetchNoteById } from "../API";
 import { debounce } from "debounce";
 
 
@@ -43,7 +43,11 @@ const Detail = (props) => {
 		return () => { };
 	});
 
+	const [username] = useState(() => {
+		return localStorage.getItem("username");
+	});
 	const queryClient = useQueryClient();
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
@@ -59,7 +63,6 @@ const Detail = (props) => {
 			}
 		}
 	);
-
 
 	const fillQuillContent = (quill) => {
 		quill.off("text-change", oldTextChangeHandler);
@@ -156,8 +159,8 @@ const Detail = (props) => {
 	}, []);
 
 	return <DetailContainer className="Detail">
-		{/* {
-			activeNote?.encrypt && profile.lockNote && <div className="lock_panel">
+		{
+			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<Result
 					icon={<LockFilled />}
 					title="This note had been lock"
@@ -172,9 +175,9 @@ const Detail = (props) => {
 								if (res.status === 0) {
 									setTimeout(() => {
 										message.success({ content: "unlock!", key, duration: 2 });
-										setProfile((pre) => {
+										queryClient.setQueryData([PROFILE], (old) => {
 											return {
-												...pre,
+												...old,
 												lockNote: false,
 											}
 										});
@@ -187,7 +190,7 @@ const Detail = (props) => {
 					}}></Input>}
 				/>
 			</div>
-		} */}
+		}
 		<EditorContainer id="editor-container">
 		</EditorContainer>
 	</DetailContainer>

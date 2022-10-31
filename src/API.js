@@ -1,6 +1,19 @@
 import axios from "axios";
 import moment from "moment";
 
+export const fetchProfile = async (username) => {
+	const response = await axios.get(`/user/${username}/profile`);
+
+	let profile = response.data;
+	if (profile.hasNotePassword) {
+		profile = {
+			...profile,
+			lockNote: true,
+		}
+	}
+	return profile;
+}
+
 export const fetchNotes = async ({ signal }) => {
 	console.log("Fetching all notes");
 	

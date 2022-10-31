@@ -12,7 +12,7 @@ import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
 import { PROFILE, NOTES } from "../CONSTANT.js";
-import { fetchNotes } from "../API";
+import { fetchProfile } from "../API";
 
 
 const Container = styled.div`
@@ -39,16 +39,7 @@ const NoteListContainer = styled.div`
 	background-color: #f0f0f0;
 `;
 
-const reorder = (list, startIndex, endIndex) => {
-	const result = Array.from(list);
-	const [removed] = result.splice(startIndex, 1);
-	result.splice(endIndex, 0, removed);
-	return result;
-};
-
-let timer = null;
 let lockNoteTimer = null;
-
 
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
@@ -56,6 +47,7 @@ const Main = (props, ref) => {
 			// getNotes();
 		}
 	}));
+	const AskNotePasswordModalRef = useRef();
 	const { logOut } = props;
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
@@ -76,18 +68,7 @@ const Main = (props, ref) => {
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
 	const queryClient = useQueryClient();
-	const { data: profile } = useQuery([PROFILE], async () => {
-		const response = await axios.get(`/user/${username}/profile`);
-
-		let profile = response.data;
-		if (profile.hasNotePassword) {
-			profile = {
-				...profile,
-				lockNote: true,
-			}
-		}
-		return profile;
-	});
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 
 	const addNoteMutation = useMutation(
 		(newNote) => {
@@ -101,6 +82,28 @@ const Main = (props, ref) => {
 			});
 		}
 	);
+
+	const validateNotePassword = () => {
+		return new Promise((resolve, reject) => {
+			AskNotePasswordModalRef.current.open((password) => {
+				axios
+					.post(`/user/validateNotePassword/${password}`)
+					.then((res) => {
+						if (res.status === 0) {
+							AskNotePasswordModalRef.current.close();
+							queryClient.setQueryData([PROFILE], (old) => {
+								return {
+									...old,
+									lockNote: false,
+								}
+							});
+
+							resolve(res);
+						}
+					});
+			});
+		});
+	}
 
 
 	return <div
@@ -165,17 +168,18 @@ const Main = (props, ref) => {
 							profile?.lockNote ?
 								<LockFilled
 									onClick={async () => {
+										await validateNotePassword();
 										message.success("unlock note!");
 									}}
 								></LockFilled> :
 								<span class="iconfont icon-unlocked"
 									onClick={() => {
-										// setProfile((pre) => {
-										// 	return {
-										// 		...pre,
-										// 		lockNote: true,
-										// 	}
-										// });
+										queryClient.setQueryData([PROFILE], (old) => {
+											return {
+												...old,
+												lockNote: true,
+											}
+										});
 										message.info("lock");
 									}}
 								></span>
@@ -210,6 +214,7 @@ const Main = (props, ref) => {
 					<NoteList
 						activeNoteId={activeNoteId}
 						setActiveNoteId={setActiveNoteId}
+						validateNotePassword={validateNotePassword}
 					></NoteList>
 				</NoteListContainer>
 				<div>
@@ -219,63 +224,6 @@ const Main = (props, ref) => {
 							activeNoteId={activeNoteId}
 							onContentChange={(modifyNote) => {
 								console.log('modifyNote: ', modifyNote);
-								// queryClient.setQueryData([NOTES], old => {
-								// 	let arr = old
-								// 		.filter((item) => item.id !== modifyNote.id)
-								// 		.map((item, idx) => {
-								// 			return {
-								// 				...item,
-								// 				number: idx + 1,
-								// 			}
-								// 		});
-
-								// 	return [
-								// 		{
-								// 			...modifyNote,
-								// 			number: 0,
-								// 		},
-								// 		...arr,
-								// 	]
-								// });
-
-								// handleContentChange(modifyNote);
-
-
-								// let findIdx = -1;
-								// liveNoteList.find((item, index) => {
-								// 	if (item.id === note.id) {
-								// 		findIdx = index;
-								// 		return true;
-								// 	}
-								// 	return false;
-								// });
-
-								// let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
-								// 	item.number = index;
-								// 	item.active = false;
-
-								// 	if (item.id === note.id) {
-								// 		return {
-								// 			...item,
-								// 			...note,
-								// 			active: true,
-								// 		}
-								// 	}
-								// 	return item;
-								// })
-								// setLiveNoteList(newNoteList);
-
-								// clearTimeout(timer);
-								// timer = setTimeout(() => {
-								// 	if (note.id === newId) {
-								// 		// create note
-								// 		setNewId(null);
-								// 		createNoteToServer(note);
-								// 	} else {
-								// 		// update note
-								// 		updateNoteToServer(note);
-								// 	}
-								// }, 700);
 							}}
 						>
 						</Detail>
@@ -283,6 +231,7 @@ const Main = (props, ref) => {
 				</div>
 			</Body>
 		</Container>
+		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
 	</div>
 }
 
