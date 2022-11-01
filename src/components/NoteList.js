@@ -1,11 +1,16 @@
 import React, { useState } from "react";
+import { useQuery } from "react-query";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
+import { useMutation, useQueryClient } from "react-query";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./modals/SetNotePwModal";
+import { NOTES, NEW_NOTE, PROFILE } from "../CONSTANT";
+import { fetchProfile, fetchNotes } from "../API";
+
 
 const { SubMenu } = Menu;
 
@@ -33,7 +38,7 @@ const getItemStyle = (isDragging, draggableStyle, active) => {
 
 const DraggableItem = styled.div`
 	padding: 12px 8px;
-	border-bottom: 1px solid lightgray;
+	border-bottom: 1px solid lightgrey;
 	border-radius: 3px;
 	height: 66px;
 	overflow: hidden;
@@ -96,81 +101,122 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { profile, getProfile, newId, liveNoteList, setLiveNoteList, deletedNoteList, setDeletedNoteList, getNotes, updateNoteToServer, validateNotePassword } = props;
-	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
+	const { activeNoteId, setActiveNoteId, validateNotePassword } = props;
 
-	const defaultNoteList = () => {
-		if (newId == null) {
-			// newId is null represent that we already create a new note in DB, so we can delete it from DB
-			//delete server side empty note.
-			liveNoteList.forEach(item => {
-				if (item.title === "New Note") {
-					axios.delete(`/note/${item.id}`).catch((err) => {
-						message.error("delete note error");
-						console.log(err);
-					});
+	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
+	const username = useState(() => localStorage.getItem("username"))[0];
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
+	const liveNoteList = noteList.filter((item) => item.deleted === 0);
+	const trashNoteList = noteList.filter((item) => item.deleted === 1);
+	const activeNote = noteList.find((item) => item.id === activeNoteId);
+
+	const queryClient = useQueryClient();
+	const reorderMutation = useMutation(
+		(newList) => {
+			const data = newList.map(note => {
+				return {
+					...note,
+					content: JSON.stringify(note.content),
 				}
 			});
-		}
 
-		setLiveNoteList((pre) => {
-			return pre.filter((item) => item.title !== "New Note").map((item) => {
-				item.active = false;
-				return item;
+			queryClient.cancelQueries([NOTES]);
+			queryClient.setQueryData([NOTES], (oldData) => {
+				return [...newList, ...trashNoteList]
 			});
-		});
-		setDeletedNoteList((pre) => {
-			return pre.map((item) => {
-				item.active = false;
-				return item;
-			});
-		});
-	}
 
-	const handleClickLiveNote = (note) => {
-		if (note.title === "New Note") {
-			return;
+			return axios.put("/note/updateLiveNoteList", data);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+			}
 		}
-
-		defaultNoteList();
-		setTimeout(() => {
-			setLiveNoteList((pre) => {
-				return pre.map((item) => {
-					if (item.id === note.id) {
-						item.active = true;
+	);
+	const moveToTrashMutation = useMutation(
+		(id) => {
+			return axios.delete(`/note/toTrash/${id}`);
+		},
+		{
+			onSuccess: async () => {
+				// active the next one note
+				let findIdx = -1;
+				liveNoteList.find((item, idx) => {
+					if (activeNoteId === item.id) {
+						findIdx = idx;
+						return true;
 					}
-					return item;
+					return false;
 				});
-			});
-		}, 20);
-	}
 
-	const handleClickDeletedNote = (note) => {
-		defaultNoteList();
-		setTimeout(() => {
-			setDeletedNoteList((pre) => {
-				return pre.map((item) => {
-					if (item.id === note.id) {
-						item.active = true;
-					}
-					return item;
-				});
-			});
-		}, 20);
-	}
+				let newActiveNote = liveNoteList[findIdx + 1];
+				if (newActiveNote) {
+					setActiveNoteId(newActiveNote.id);
+				} else {
+					setActiveNoteId(null);
+				}
 
-	const getSelectedKeys = () => {
-		let find = [...liveNoteList, ...deletedNoteList].find(note => note.active);
-		if (find === undefined) {
-			return [];
-		} else {
-			return [find.id];
+				queryClient.invalidateQueries([NOTES]);
+			},
 		}
-	}
+	);
+	const recoverNoteMutation = useMutation(
+		(id) => {
+			const find = trashNoteList.find((item) => {
+				if (item.id === id) {
+					return true;
+				}
+				return false;
+			});
+
+			const newNote = {
+				...find,
+				content: JSON.stringify(find.content),
+				deleted: 0,
+				updateTime: moment(),
+			}
+			return axios.put("/note/reorder", newNote);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+				setActiveNoteId(null);
+			}
+		}
+	);
+	const deleteNoteMutation = useMutation(
+		(id) => {
+			return axios.delete(`/note/${id}`).then(() => {
+				message.success("delete success");
+			})
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES], { exact: true });
+			}
+		}
+	);
+	const patchNoteMutation = useMutation(
+		(newNote) => {
+			const data = {
+				...newNote,
+				content: JSON.stringify(newNote.content),
+			}
+			return axios.put("/note/reorder", data);
+		},
+		{
+			onSuccess: () => {
+				queryClient.invalidateQueries([NOTES]);
+			}
+		}
+	);
 
 	const hideContextMenu = () => {
-		document.getElementById("Menu").style.display = "none";
-		document.getElementById("Menu2").style.display = "none";
+		const Menu = document.getElementById("Menu");
+		Menu.style.display = "none";
+		const Menu2 = document.getElementById("Menu2");
+		Menu2.style.display = "none";
 	}
 
 	const getLockIcon = (note) => {
@@ -185,53 +231,40 @@ const NoteList = (props) => {
 		}
 	}
 
-	const activeNote = [...liveNoteList, ...deletedNoteList].find((item) => {
-		if (item.active) {
-			return true;
-		}
-		return false;
-	});
-
-
 	return <>
 		<ContextMenu id="Menu">
 			<div
 				className="item"
 				onClick={async () => {
 					const moveToTrash = () => {
-						if (activeNote.title === "New Note") {
-							axios.delete(`/note/${activeNote.id}`).catch((err) => {
-								console.log(err);
-							});
-							setLiveNoteList(pre => {
-								return pre.filter(item => item.title !== "New Note");
-							});
-						} else {
-							axios.delete(`/note/fake/${activeNote.id}`).then(() => {
-								let divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
-								const element = document.getElementById(divId);
-								element.style.background = "red";
+						const divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
+						const element = document.getElementById(divId);
+						element.style.background = "red";
+						setTimeout(() => {
+							element.style.transition = "all 0.4s";
+							element.style.padding = 0;
+							element.style.height = 0;
+							element.style.border = 0;
+						}, 10);
 
-								setTimeout(() => {
-									element.style.transition = "all 0.4s";
-									element.style.padding = 0;
-									element.style.height = 0;
-									element.style.border = 0;
-								}, 10);
-
-								setTimeout(() => {
-									getNotes();
-								}, 400);
-							});
-						}
-						document.getElementById("Menu").style.display = "none";
+						setTimeout(() => {
+							if (activeNote.title === NEW_NOTE) {
+								queryClient.setQueryData([NOTES], (old) => {
+									return old.filter((item) => item.id !== activeNoteId);
+								});
+								axios.delete(`/note/${activeNoteId}`).catch((err) => {
+									console.log(err);
+								});
+							} else {
+								moveToTrashMutation.mutate(activeNoteId);
+							}
+						}, 400);
 					}
 
 					if (activeNote.encrypt) {
 						if (profile.lockNote) {
 							// now is lock status, let's unlock first
 							await validateNotePassword();
-							console.log(333);
 							moveToTrash();
 						} else {
 							// now is unlock status
@@ -255,14 +288,14 @@ const NoteList = (props) => {
 									...activeNote,
 									encrypt: false,
 								}
-								updateNoteToServer(newNote, getNotes);
+								patchNoteMutation.mutate(newNote);
 							} else {
 								// add lock
 								let newNote = {
 									...activeNote,
 									encrypt: true,
 								}
-								updateNoteToServer(newNote, getNotes);
+								patchNoteMutation.mutate(newNote);
 							}
 						}
 
@@ -287,6 +320,14 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
+					recoverNoteMutation.mutate(activeNoteId);
+				}}
+			>
+				recover
+			</div>
+			<div
+				className="item"
+				onClick={() => {
 					Modal.confirm({
 						icon: <ExclamationCircleOutlined />,
 						content: <ConfirmContent>
@@ -298,69 +339,41 @@ const NoteList = (props) => {
 						okButtonProps: { danger: true },
 						cancelText: "Cancel",
 						onOk: () => {
-							axios
-								.delete(`/note/${activeNote.id}`)
-								.then(() => {
-									message.success("delete success");
-									getNotes();
-								})
-								.catch(() => {
-									message.error("something wrong");
-								});
-
-							document.getElementById("Menu2").style.display = "none";
+							deleteNoteMutation.mutate(activeNoteId, {
+								onSuccess: () => {
+									setActiveNoteId(null);
+								}
+							});
 						}
 					});
 				}}
 			>
 				delete
 			</div>
-			<div
-				className="item"
-				onClick={() => {
-					let newNote = {
-						...activeNote,
-						deleted: 0,
-					}
-					updateNoteToServer(newNote, getNotes);
-
-					document.getElementById("Menu2").style.display = "none";
-				}}
-			>
-				recover
-			</div>
 		</ContextMenu>
 		<div className="NoteList">
 			<Menu
 				defaultOpenKeys={["sub1", "sub2"]}
 				mode="inline"
-				selectedKeys={getSelectedKeys()}
+				selectedKeys={[]}
 			>
 				<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
 					<DragDropContext
 						onDragStart={() => {
-							defaultNoteList();
 						}}
 						onDragEnd={(result) => {
 							if (!result.destination) {
 								return;
 							}
 
-							let ans = Array.from(liveNoteList);
-							const [removed] = ans.splice(result.source.index, 1);
-							ans.splice(result.destination.index, 0, removed);
-							for (let i = 0; i < ans.length; i++) {
-								ans[i].number = i;
+							let newLiveNoteList = Array.from(liveNoteList);
+							const [removed] = newLiveNoteList.splice(result.source.index, 1);
+							newLiveNoteList.splice(result.destination.index, 0, removed);
+							for (let i = 0; i < newLiveNoteList.length; i++) {
+								newLiveNoteList[i].number = i;
 							}
-							setLiveNoteList(ans);
 
-							ans = ans.map(note => {
-								return {
-									...note,
-									content: JSON.stringify(note.content),
-								}
-							});
-							axios.put("/note/updateLiveNoteList", ans);
+							reorderMutation.mutate(newLiveNoteList);
 						}}
 					>
 						<Droppable droppableId="droppable">
@@ -381,17 +394,30 @@ const NoteList = (props) => {
 													style={getItemStyle(
 														snapshot.isDragging,
 														provided.draggableProps.style,
-														note.active
+														note.id === activeNoteId
 													)}
 													onClick={() => {
-														handleClickLiveNote(note);
+														liveNoteList.forEach(item => {
+															if (item.title === NEW_NOTE && item.id !== note.id) {
+																// this note's content is empty, we delete it forever
+																axios.delete(`/note/${item.id}`)
+																	.then(() => {
+																		queryClient.refetchQueries([NOTES]);
+																	})
+																	.catch((err) => {
+																		message.error("delete note error");
+																		console.log(err);
+																	});
+															}
+														});
+
+														setActiveNoteId(note.id);
 													}}
 													onContextMenu={(e) => {
-														hideContextMenu();
-
-														handleClickLiveNote(note);
-
 														e.preventDefault();
+														hideContextMenu();
+														setActiveNoteId(note.id);
+
 														const clickX = e.clientX;
 														const clickY = e.clientY;
 														const Menu = document.getElementById("Menu");
@@ -418,7 +444,7 @@ const NoteList = (props) => {
 					<div
 						style={getListStyle(false)}
 					>
-						{deletedNoteList.map((note) => {
+						{trashNoteList.map((note) => {
 							let eraseDate = moment(note.deleteTime).add(11, "days");
 							let remainingDay = eraseDate.diff(moment(), "days");
 
@@ -433,15 +459,14 @@ const NoteList = (props) => {
 								style={getItemStyle(
 									false,
 									{},
-									note.active
+									note.id === activeNoteId,
 								)}
 								onClick={() => {
-									handleClickDeletedNote(note);
+									setActiveNoteId(note.id);
 								}}
 								onContextMenu={(e) => {
 									hideContextMenu();
-
-									handleClickDeletedNote(note);
+									setActiveNoteId(note.id);
 
 									e.preventDefault();
 									const clickX = e.clientX;
@@ -462,6 +487,7 @@ const NoteList = (props) => {
 				</SubMenu>
 			</Menu>
 		</div >
+
 		{
 			isSetNotePwModalOpen && <SetNotePwModal
 				isModalOpen={isSetNotePwModalOpen}
@@ -472,13 +498,13 @@ const NoteList = (props) => {
 					message.success("set note password success");
 					setTimeout(() => {
 						setIsSetNotePwModalOpen(false);
-						getProfile();
+						queryClient.invalidateQueries([PROFILE]);
 						// add lock
 						let newNote = {
 							...activeNote,
 							encrypt: true,
 						}
-						updateNoteToServer(newNote, getNotes);
+						patchNoteMutation.mutate(newNote);
 					}, 600);
 				}}
 			></SetNotePwModal>

@@ -1,4 +1,5 @@
-import React, { useEffect, useState, forwardRef, useImperativeHandle, useCallback, useRef } from "react";
+import React, { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
@@ -9,12 +10,19 @@ import NoteList from "./NoteList";
 import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
+import { PROFILE, NOTES } from "../CONSTANT.js";
+import { fetchProfile } from "../API";
 
+const MainContainer = styled.div`
+	background: skyblue;
+	height: 100%;
+`
 
 const Container = styled.div`
+	margin: 0 auto;
+	padding-top: 10px;
+	padding-bottom: 10px;
 	width: 950px;
-	height: 650px;
-	margin: 10px auto;
 `;
 const H1 = styled.h1`
 	display: flex;
@@ -23,7 +31,7 @@ const H1 = styled.h1`
 `;
 const Body = styled.div`
 	border: 1px solid gray;
-	height: 100%;
+	height: 650px;
 	background-color: white;
 	display: flex;
 `;
@@ -35,123 +43,50 @@ const NoteListContainer = styled.div`
 	background-color: #f0f0f0;
 `;
 
-const reorder = (list, startIndex, endIndex) => {
-	const result = Array.from(list);
-	const [removed] = result.splice(startIndex, 1);
-	result.splice(endIndex, 0, removed);
-	return result;
-};
 
-let timer = null;
 let lockNoteTimer = null;
 
 const Main = (props, ref) => {
 	useImperativeHandle(ref, () => ({
 		refresh: () => {
-			getNotes();
+			// getNotes();
 		}
 	}));
+	const AskNotePasswordModalRef = useRef();
 	const { logOut } = props;
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
 	});
-	const AskNotePasswordModalRef = useRef();
-	const [profile, setProfile] = useState();
+	const [isLoading, setIsLoading] = useState(false);
+	if (useIsFetching() !== 0) {
+		if (isLoading === false) {
+			setIsLoading(true);
+		}
+	} else {
+		if (isLoading === true) {
+			setTimeout(() => {
+				setIsLoading(false);
+			}, 1000);
+		}
+	}
+	const [activeNoteId, setActiveNoteId] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
-	const [loading, setLoading] = useState(false);
-	const [newId, setNewId] = useState(null);
-	const [liveNoteList, setLiveNoteList] = useState([]);
-	const [deletedNoteList, setDeletedNoteList] = useState([]);
 
-	const getNotes = (cb = () => { }) => {
-		setLoading(true);
-		axios
-			.get("/note/findAll")
-			.then(({ status, data, msg }) => {
-				let list = data.map((note) => {
-					return {
-						...note,
-						content: JSON.parse(note.content),
-						updateTime: moment(note.updateTime),
-						createTime: moment(note.createTime),
-						deleteTime: moment(note.deleteTime),
-						active: false,
-					}
-				});
-				let lives = list.filter((item) => item.deleted === 0);
-				let deletes = list.filter((item) => item.deleted === 1);
-				setLiveNoteList(lives);
-				setDeletedNoteList(deletes);
+	const queryClient = useQueryClient();
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 
-				cb(list);
-			})
-			.finally(() => {
-				setLoading(false);
-			});
-	}
-
-	const createNoteToServer = (newNote, cb = () => { }) => {
-		let content = JSON.stringify(newNote.content);
-		let data = {
-			...newNote,
-			content: content,
-		}
-
-		axios.post("/note", data).then((res) => {
-			if (res.data) {
-				message.success("add note");
+	const addNoteMutation = useMutation(
+		(newNote) => {
+			let data = {
+				...newNote,
+				content: JSON.stringify(newNote.content),
 			}
-		}).finally(() => {
-			cb();
-		});
-	}
 
-	const updateNoteToServer = (note, cb = () => { }, successText = null) => {
-		let data = {
-			...note,
-			number: 0,
-			content: JSON.stringify(note.content),
+			return axios.post("/note", data).then((res) => {
+				message.success("add note");
+			});
 		}
-
-		setLoading(true);
-		axios
-			.put("/note/reorder", data)
-			.then((res) => {
-				if (successText) {
-					message.success(successText);
-				}
-			})
-			.catch((err) => {
-				console.log(err);
-				message.error("update fail");
-			})
-			.finally(() => {
-				cb();
-				setTimeout(() => {
-					setLoading(false);
-				}, 1200);
-			});
-	}
-
-	const getProfile = useCallback(() => {
-		axios
-			.get(`/user/${username}/profile`)
-			.then((res) => {
-				let profile = res.data;
-				if (profile.hasNotePassword) {
-					profile = {
-						...profile,
-						lockNote: true,
-					}
-				}
-				setProfile(profile);
-			});
-	}, [username]);
-
-	const getActiveNote = () => {
-		let ans = [...liveNoteList, ...deletedNoteList].find(item => item.active);
-		return ans;
-	}
+	);
 
 	const validateNotePassword = () => {
 		return new Promise((resolve, reject) => {
@@ -161,12 +96,13 @@ const Main = (props, ref) => {
 					.then((res) => {
 						if (res.status === 0) {
 							AskNotePasswordModalRef.current.close();
-							setProfile((pre) => {
+							queryClient.setQueryData([PROFILE], (old) => {
 								return {
-									...pre,
+									...old,
 									lockNote: false,
 								}
 							});
+
 							resolve(res);
 						}
 					});
@@ -174,29 +110,23 @@ const Main = (props, ref) => {
 		});
 	}
 
-	useEffect(() => {
-		// did mount
-		getNotes();
-		getProfile();
-	}, [getProfile]);
 
-
-	return <div
-		className="Main"
+	return <MainContainer
 		onClick={(e) => {
 			// 5 min timeout for no modify
 			if (profile?.hasNotePassword) {
 				clearTimeout(lockNoteTimer);
 				lockNoteTimer = setTimeout(() => {
-					setProfile((pre) => {
+					queryClient.setQueryData([PROFILE], (old) => {
 						return {
-							...pre,
+							...old,
 							lockNote: true,
 						}
 					});
 				}, 5 * 60 * 1000);
 			}
-		}}>
+		}}
+	>
 		<Container>
 			<H1>
 				<div>
@@ -205,7 +135,7 @@ const Main = (props, ref) => {
 					>
 						Notes
 					</span>
-					{loading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
+					{isLoading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
 				<div>
 					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>
@@ -214,54 +144,25 @@ const Main = (props, ref) => {
 						icon={
 							<EditFilled
 								onClick={() => {
-									setLiveNoteList((pre) => {
-										return pre.map((item) => {
-											item.active = false;
-											return item;
-										});
-									});
-									setDeletedNoteList((pre) => {
-										return pre.map((item) => {
-											item.active = false;
-											return item;
-										});
-									});
+									const newId = uuidv4();
+									const newNote = {
+										id: newId,
+										title: "New Note",
+										content: "",
+										number: 0,
+										createTime: moment(),
+										updateTime: moment(),
+										username: localStorage.getItem("username"),
+										deleted: 0,
+										active: false,
+									}
 
-									let newId = uuidv4();
-									let newArr = [
-										{
-											id: newId,
-											title: "New Note",
-											content: "",
-											number: 0,
-											createTime: moment(),
-											updateTime: moment(),
-											username: localStorage.getItem("username"),
-											deleted: 0,
-											active: false,
-										},
-										...liveNoteList
-									].map((item, index) => {
-										return {
-											...item,
-											active: false,
-											number: index,
+									addNoteMutation.mutate(newNote, {
+										onSuccess: () => {
+											setActiveNoteId(newId);
+											queryClient.refetchQueries([NOTES]);
 										}
 									});
-									setNewId(newId);
-									setLiveNoteList(newArr);
-
-									setTimeout(() => {
-										setLiveNoteList((pre) => {
-											return pre.map((item) => {
-												if (item.id === newId) {
-													item.active = true;
-												}
-												return item;
-											});
-										});
-									}, 20);
-
 								}}
 							></EditFilled>
 						}
@@ -278,9 +179,9 @@ const Main = (props, ref) => {
 								></LockFilled> :
 								<span class="iconfont icon-unlocked"
 									onClick={() => {
-										setProfile((pre) => {
+										queryClient.setQueryData([PROFILE], (old) => {
 											return {
-												...pre,
+												...old,
 												lockNote: true,
 											}
 										});
@@ -316,62 +217,18 @@ const Main = (props, ref) => {
 			}}>
 				<NoteListContainer>
 					<NoteList
-						profile={profile}
-						getProfile={getProfile}
-						newId={newId}
-						liveNoteList={liveNoteList}
-						setLiveNoteList={setLiveNoteList}
-						deletedNoteList={deletedNoteList}
-						setDeletedNoteList={setDeletedNoteList}
-						getNotes={getNotes}
-						updateNoteToServer={updateNoteToServer}
+						activeNoteId={activeNoteId}
+						setActiveNoteId={setActiveNoteId}
 						validateNotePassword={validateNotePassword}
 					></NoteList>
 				</NoteListContainer>
 				<div>
 					{
-						getActiveNote() &&
+						activeNoteId &&
 						<Detail
-							profile={profile}
-							setProfile={setProfile}
-							newId={newId}
-							curNote={getActiveNote()}
-							createOrUpdateNote={(note) => {
-								let findIdx = -1;
-								liveNoteList.find((item, index) => {
-									if (item.id === note.id) {
-										findIdx = index;
-										return true;
-									}
-									return false;
-								});
-
-								let newNoteList = reorder(liveNoteList, findIdx, 0).map((item, index) => {
-									item.number = index;
-									item.active = false;
-
-									if (item.id === note.id) {
-										return {
-											...item,
-											...note,
-											active: true,
-										}
-									}
-									return item;
-								})
-								setLiveNoteList(newNoteList);
-
-								clearTimeout(timer);
-								timer = setTimeout(() => {
-									if (note.id === newId) {
-										// create note
-										setNewId(null);
-										createNoteToServer(note);
-									} else {
-										// update note
-										updateNoteToServer(note);
-									}
-								}, 700);
+							activeNoteId={activeNoteId}
+							onContentChange={(modifyNote) => {
+								console.log('modifyNote: ', modifyNote);
 							}}
 						>
 						</Detail>
@@ -382,8 +239,12 @@ const Main = (props, ref) => {
 		{
 			settingPanelOpen && <SettingPanel
 				profile={profile}
-				getProfile={getProfile}
-				getNotes={getNotes}
+				getProfile={() => {
+					queryClient.invalidateQueries([PROFILE]);
+				}}
+				getNotes={() => {
+					queryClient.invalidateQueries([NOTES]);
+				}}
 				isModalOpen={settingPanelOpen}
 				closeModal={() => {
 					setSettingPanelOpen(false);
@@ -391,7 +252,7 @@ const Main = (props, ref) => {
 			></SettingPanel>
 		}
 		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
-	</div>
+	</MainContainer>
 }
 
 export default forwardRef(Main);

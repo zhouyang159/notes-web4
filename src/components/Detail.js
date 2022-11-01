@@ -7,6 +7,10 @@ import "quill/dist/quill.snow.css"
 import moment from "moment";
 import { Input, message, } from "antd";
 import axios from "axios";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { PROFILE, NOTES } from "../CONSTANT";
+import { fetchProfile, fetchNoteById } from "../API";
+import { debounce } from "debounce";
 
 
 const DetailContainer = styled.div`
@@ -32,15 +36,43 @@ const EditorContainer = styled.div`
 `;
 
 const Detail = (props) => {
-	const { profile, setProfile, newId, createOrUpdateNote, curNote } = props;
+	const { activeNoteId } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
-	const [textChangeHandler, setTextChangeHandler] = useState(() => {
+	const [oldTextChangeHandler, setOldTextChangeHandler] = useState(() => {
 		return () => { };
 	});
 
-	const getTextChangeHandler = (quill) => {
-		return () => {
+	const [username] = useState(() => {
+		return localStorage.getItem("username");
+	});
+	const queryClient = useQueryClient();
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
+	const patchNoteMutation = useMutation(
+		(newNote) => {
+			const data = {
+				...newNote,
+				content: JSON.stringify(newNote.content),
+			}
+			return axios.put("/note/reorder", data);
+		},
+		{
+			onSuccess: () => {
+				queryClient.refetchQueries([NOTES], { exact: true });
+			}
+		}
+	);
+
+	const fillQuillContent = (quill) => {
+		quill.off("text-change", oldTextChangeHandler);
+		quill.setContents(curNote?.content);
+
+		const debouncePatchNote = debounce((newNote) => {
+			patchNoteMutation.mutate(newNote);
+		}, 700);
+
+		const newTextChangeHandler = () => {
 			let title = "";
 			let text = JSON.stringify(quill.getText(0, 200).trim());
 
@@ -66,23 +98,31 @@ const Detail = (props) => {
 				content: quill.getContents(),
 				updateTime: moment(),
 			}
+			queryClient.setQueryData([NOTES, activeNoteId], newNote);
 
-			createOrUpdateNote(newNote, newId);
+			debouncePatchNote(newNote);
+		}
+		setOldTextChangeHandler(() => newTextChangeHandler);
+
+		quill.on("text-change", newTextChangeHandler);
+		if (curNote?.deleted === 1) {
+			quill.enable(false);
+		} else {
+			quill.enable();
+			quill.blur();
 		}
 	}
 
 	useEffect(() => {
-		if (didMount.current === false) {
+		if (didMount.current === false || quill === null) {
 			return;
 		}
-		if (newId === null) {
-			// when note create finish, we bind a new handler to quill
-			quill.off("text-change", textChangeHandler);
-			let newHandler = getTextChangeHandler(quill);
-			quill.on("text-change", newHandler);
-			setTextChangeHandler(() => newHandler);
+		if (isLoading) {
+			return;
 		}
-	}, [newId]);
+		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
+		fillQuillContent(quill);
+	}, [activeNoteId, isLoading]);
 
 	useEffect(() => {
 		let toolbarOptions = [
@@ -101,7 +141,7 @@ const Detail = (props) => {
 			[{ "color": [] }, { "background": [] }],          // dropdown with defaults from theme
 			// [{ "font": [] }],
 			// [{ "align": [] }],
-
+			[ 'link', 'image', 'video', 'formula' ],          // add's image support
 			["clean"]                                         // remove formatting button
 		];
 
@@ -113,20 +153,10 @@ const Detail = (props) => {
 			theme: "snow",  // or "bubble"，
 		});
 		setQuill(quill);
-		quill.setContents(curNote.content);
-		quill.focus();
-
-		let handler = getTextChangeHandler(quill);
-		quill.on("text-change", handler);
-		setTextChangeHandler(() => handler);
-
-		if (curNote.deleted === 1) {
-			quill.enable(false);
-		}
+		fillQuillContent(quill);
 
 		didMount.current = true;
 	}, []);
-
 
 	return <DetailContainer className="Detail">
 		{
@@ -145,9 +175,9 @@ const Detail = (props) => {
 								if (res.status === 0) {
 									setTimeout(() => {
 										message.success({ content: "unlock!", key, duration: 2 });
-										setProfile((pre) => {
+										queryClient.setQueryData([PROFILE], (old) => {
 											return {
-												...pre,
+												...old,
 												lockNote: false,
 											}
 										});
