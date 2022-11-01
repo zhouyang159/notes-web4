@@ -13,11 +13,16 @@ import AskNotePasswordModal from "./modals/AskNotePasswordModal";
 import { PROFILE, NOTES } from "../CONSTANT.js";
 import { fetchProfile } from "../API";
 
+const MainContainer = styled.div`
+	background: skyblue;
+	height: 100%;
+`
 
 const Container = styled.div`
+	margin: 0 auto;
+	padding-top: 10px;
+	padding-bottom: 10px;
 	width: 950px;
-	height: 650px;
-	margin: 10px auto;
 `;
 const H1 = styled.h1`
 	display: flex;
@@ -26,7 +31,7 @@ const H1 = styled.h1`
 `;
 const Body = styled.div`
 	border: 1px solid gray;
-	height: 100%;
+	height: 650px;
 	background-color: white;
 	display: flex;
 `;
@@ -37,6 +42,7 @@ const NoteListContainer = styled.div`
 	overflow-y: auto;
 	background-color: #f0f0f0;
 `;
+
 
 let lockNoteTimer = null;
 
@@ -105,8 +111,7 @@ const Main = (props, ref) => {
 	}
 
 
-	return <div
-		className="Main"
+	return <MainContainer
 		onClick={(e) => {
 			// 5 min timeout for no modify
 			if (profile?.hasNotePassword) {
@@ -120,7 +125,8 @@ const Main = (props, ref) => {
 					});
 				}, 5 * 60 * 1000);
 			}
-		}}>
+		}}
+	>
 		<Container>
 			<H1>
 				<div>
@@ -246,7 +252,7 @@ const Main = (props, ref) => {
 			></SettingPanel>
 		}
 		<AskNotePasswordModal ref={AskNotePasswordModalRef}></AskNotePasswordModal>
-	</div>
+	</MainContainer>
 }
 
 export default forwardRef(Main);
