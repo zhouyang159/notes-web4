@@ -10,8 +10,10 @@ const sessionKey = `${localStorage.getItem("username")}_${new Date().getTime()}`
 axios.defaults.headers.common["sessionKey"] = sessionKey;
 axios.defaults.baseURL = "/api";
 
+let myInterceptor = null;
 
 const App = () => {
+	console.log("App");
 	const didMount = useRef(false);
 	const MainRef = useRef(null);
 
@@ -26,13 +28,13 @@ const App = () => {
 	});
 
 	if (didMount.current === false) {
-		// Add a response interceptor
-		axios.interceptors.response.use(function (response) {
+			// Add a response interceptor
+		myInterceptor = axios.interceptors.response.use(function (response) {
 			// Any status code that lie within the range of 2xx cause this function to trigger
 			// Do something with response data
 			let { status, msg } = response.data;
 			if (status !== 0) {
-				message.error(msg);
+				message.error(msg, 60);
 				if (status === 6 || status === 7) {
 					localStorage.removeItem("token");
 					setSignIn(false);
@@ -44,7 +46,7 @@ const App = () => {
 		}, function (error) {
 			// Any status codes that falls outside the range of 2xx cause this function to trigger
 			let { status, msg } = error?.response.data;
-			message.error(msg);
+			message.error(msg, 60);
 			if (status === 6 || status === 7) {
 				localStorage.removeItem("token");
 				setSignIn(false);
@@ -79,10 +81,15 @@ const App = () => {
 	useEffect(() => {
 		didMount.current = true;
 
-		console.log("V" + process.env.REACT_APP_VERSION, process.env.REACT_APP_BUILD_TIME);
-		console.log(process.env);
-		console.log(window.location.hostname);
-		console.log(window.location.port);
+		// console.log("V" + process.env.REACT_APP_VERSION, process.env.REACT_APP_BUILD_TIME);
+		// console.log(process.env);
+		// console.log(window.location.hostname);
+		// console.log(window.location.port);
+
+		return () => {
+			console.log("unmount");
+			axios.interceptors.response.eject(myInterceptor);
+		}
 	}, []);
 
 

@@ -2,6 +2,7 @@ import axios from "axios";
 import moment from "moment";
 
 export const fetchProfile = async (username) => {
+	console.log("Fetch profile");
 	const response = await axios.get(`/user/${username}/profile`);
 
 	let profile = response.data;
