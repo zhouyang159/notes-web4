@@ -141,7 +141,6 @@ const Detail = (props) => {
 			[{ "color": [] }, { "background": [] }],          // dropdown with defaults from theme
 			// [{ "font": [] }],
 			// [{ "align": [] }],
-			[ 'link', 'image', 'video', 'formula' ],          // add's image support
 			["clean"]                                         // remove formatting button
 		];
 

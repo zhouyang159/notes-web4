@@ -1,31 +1,47 @@
-import React, { useCallback, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button, Modal, message, Input, Space } from "antd";
 import SetNotePwModal from "../modals/SetNotePwModal";
 import ChangeNotePwModal from "../modals/ChangeNotePwModal";
-import { useTheme } from "styled-components";
 import axios from "axios";
+import { HexColorPicker } from "react-colorful";
+import { useQueryClient, useQuery, useMutation } from "react-query";
+import { PROFILE } from "../../CONSTANT";
+import { fetchProfile } from "../../API";
+import { debounce } from "debounce";
 
 
-const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, closeModal = () => { } }) => {
+const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
    const [editing, setEditing] = useState(false);
    const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
    const [isChangeNotePwModalOpen, setIsChangeNotePwModalOpen] = useState(false);
 
-   const [nickname, setNickname] = useState(profile?.nickname);
+   const [username] = useState(() => localStorage.getItem("username"));
+   const queryClient = useQueryClient();
+   const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 
-   const submit = () => {
-      let newProfile = {
-         ...profile,
-         nickname: nickname,
+   const profileMutation = useMutation(
+      (newProfile) => {
+         return axios
+            .put(`/user/profile`, newProfile);
+      },
+      {
+         onSuccess: () => {
+            queryClient.invalidateQueries([PROFILE]);
+
+         }
       }
+   );
 
-      axios
-         .put(`/user/profile`, newProfile)
-         .then((res) => {
-            setEditing(false);
-            getProfile();
-         });
-   }
+   const debounceUpdateBackgroundColor = useMemo(() => {
+      return debounce((color) => {
+         const newProfile = {
+            ...profile,
+            backgroundColor: color,
+         }
+         profileMutation.mutate(newProfile);
+      }, 1000)
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
 
    return <>
       <Modal
@@ -34,8 +50,8 @@ const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, clos
          onCancel={closeModal}
          maskClosable={false}
          footer={null}
+         mask={false}
       >
-
          <Space direction="vertical" size="middle" style={{ display: 'flex' }}>
             <div>
                <span style={{ marginRight: "10px" }}>username:</span>
@@ -47,7 +63,23 @@ const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, clos
                   !editing && <strong onDoubleClick={() => setEditing(true)}>{profile.nickname || "there is no nickname"}</strong>
                }
                {
-                  editing && <Input value={nickname} style={{ width: 200 }} size="small" onChange={(e) => setNickname(e.target.value)} onBlur={submit}></Input>
+                  editing && <Input value={profile?.nickname} style={{ width: 200 }} size="small"
+                     onChange={(e) => {
+                        queryClient.setQueriesData([PROFILE], (old) => {
+                           return {
+                              ...old,
+                              nickname: e.target.value,
+                           }
+                        })
+                     }}
+                     onBlur={() => {
+                        profileMutation.mutate(profile, {
+                           onSuccess: () => {
+                              setEditing(false);
+                           }
+                        });
+                     }}
+                  ></Input>
                }
             </div>
             <div>
@@ -77,8 +109,17 @@ const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, clos
                   </Button>
                }
             </div>
+            <div>background color:</div>
+            <HexColorPicker color={profile?.backgroundColor} onChange={(color) => {
+               queryClient.setQueryData([PROFILE], (old) => {
+                  return {
+                     ...old,
+                     backgroundColor: color,
+                  }
+               });
 
-
+               debounceUpdateBackgroundColor(color);
+            }} />
          </Space>
       </Modal>
       {
@@ -91,7 +132,7 @@ const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, clos
                message.success("set note password success");
                setTimeout(() => {
                   setIsSetNotePwModalOpen(false);
-                  getProfile();
+                  queryClient.invalidateQueries([PROFILE]);
                }, 600);
             }}
          ></SetNotePwModal>
@@ -105,8 +146,7 @@ const SettingPanel = ({ profile, getProfile, getNotes, isModalOpen = false, clos
             onSuccess={() => {
                setTimeout(() => {
                   setIsChangeNotePwModalOpen(false);
-                  getProfile();
-                  getNotes();
+                  queryClient.invalidateQueries([PROFILE]);
                }, 600);
             }}
          ></ChangeNotePwModal>

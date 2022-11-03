@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle, useRef } from "react";
+import React, { useState, forwardRef, useImperativeHandle, useRef, useCallback } from "react";
 import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
@@ -10,11 +10,16 @@ import NoteList from "./NoteList";
 import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
-import { PROFILE, NOTES } from "../CONSTANT.js";
-import { fetchProfile } from "../API";
+import { PROFILE, NOTES, NEW_NOTE } from "../CONSTANT.js";
+import { fetchNotes, fetchProfile } from "../API";
 
 const MainContainer = styled.div`
-	background: skyblue;
+	background: ${(props) => {
+		if (props.backgroundColor) {
+			return props.backgroundColor;
+		}
+		return "white";
+	}};
 	height: 100%;
 `
 
@@ -54,9 +59,7 @@ const Main = (props, ref) => {
 	}));
 	const AskNotePasswordModalRef = useRef();
 	const { logOut } = props;
-	const [username] = useState(() => {
-		return localStorage.getItem("username");
-	});
+	const [username] = useState(() => localStorage.getItem("username"));
 	const [isLoading, setIsLoading] = useState(false);
 	if (useIsFetching() !== 0) {
 		if (isLoading === false) {
@@ -69,6 +72,7 @@ const Main = (props, ref) => {
 			}, 1000);
 		}
 	}
+	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const [activeNoteId, setActiveNoteId] = useState(null);
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
@@ -110,8 +114,29 @@ const Main = (props, ref) => {
 		});
 	}
 
+	const disabledNewBtn = useCallback(() => {
+		if (isLoading) {
+			return true;
+		}
+
+		let disabled = null;
+		const activeNote = noteList.find(item => item.id === activeNoteId);
+		if (!activeNote) {
+			disabled = false;
+		} else {
+			if(activeNote.title === NEW_NOTE) {
+				disabled = true;
+			} else {
+				disabled = false;
+			}
+		}
+
+		return disabled;
+	}, [activeNoteId, isLoading, noteList]);
+
 
 	return <MainContainer
+		backgroundColor={profile?.backgroundColor}
 		onClick={(e) => {
 			// 5 min timeout for no modify
 			if (profile?.hasNotePassword) {
@@ -140,6 +165,7 @@ const Main = (props, ref) => {
 				<div>
 					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>
 					<Button
+						disabled={disabledNewBtn()}
 						size="small" shape="circle" style={{ marginRight: 10 }}
 						icon={
 							<EditFilled
@@ -238,13 +264,6 @@ const Main = (props, ref) => {
 		</Container>
 		{
 			settingPanelOpen && <SettingPanel
-				profile={profile}
-				getProfile={() => {
-					queryClient.invalidateQueries([PROFILE]);
-				}}
-				getNotes={() => {
-					queryClient.invalidateQueries([NOTES]);
-				}}
 				isModalOpen={settingPanelOpen}
 				closeModal={() => {
 					setSettingPanelOpen(false);

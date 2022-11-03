@@ -15,7 +15,7 @@ export const fetchProfile = async (username) => {
 }
 
 export const fetchNotes = async ({ signal }) => {
-	console.log("Fetching all notes");
+	console.log("Fetch all notes");
 	
 	const response = await axios.get("/note/findAll", { signal });
 
@@ -33,7 +33,7 @@ export const fetchNotes = async ({ signal }) => {
 }
 
 export const fetchNoteById = async (id, { signal }) => {
-	console.log("Fetching note by id: " + id);
+	console.log("Fetch note by id: " + id);
 
 	const res = await axios.get(`/note/${id}`, { signal });
 	const data = {
