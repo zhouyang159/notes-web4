@@ -19,4 +19,7 @@ root.render(
          <App />
       </QueryClientProvider>
    </React.StrictMode>
+      // <QueryClientProvider client={queryClient} >
+      //    <App />
+      // </QueryClientProvider>
 );

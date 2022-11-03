@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Result } from "antd";
 import { LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
@@ -36,6 +36,8 @@ const EditorContainer = styled.div`
 `;
 
 const Detail = (props) => {
+	console.log("Detail");
+
 	const { activeNoteId } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
@@ -48,7 +50,7 @@ const Detail = (props) => {
 	});
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
-	const { isLoading, isStale, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
+	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
 			const data = {
@@ -155,6 +157,9 @@ const Detail = (props) => {
 		fillQuillContent(quill);
 
 		didMount.current = true;
+		return () => {
+			console.log("Detail unmount");
+		}
 	}, []);
 
 	return <DetailContainer className="Detail">

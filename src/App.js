@@ -10,7 +10,31 @@ const sessionKey = `${localStorage.getItem("username")}_${new Date().getTime()}`
 axios.defaults.headers.common["sessionKey"] = sessionKey;
 axios.defaults.baseURL = "/api";
 
-let myInterceptor = null;
+axios.interceptors.response.use(function (response) {
+	// Any status code that lie within the range of 2xx cause this function to trigger
+	// Do something with response data
+	let { status, msg } = response.data;
+	if (status !== 0) {
+		message.error(msg, 60);
+		if (status === 6 || status === 7) {
+			localStorage.removeItem("token");
+			window.location = "/pc";
+		}
+
+		return Promise.reject(response);
+	}
+	return response.data;
+}, function (error) {
+	// Any status codes that falls outside the range of 2xx cause this function to trigger
+	let { status, msg } = error?.response.data;
+	message.error(msg, 60);
+	if (status === 6 || status === 7) {
+		localStorage.removeItem("token");
+		window.location = "/pc";
+	}
+
+	return Promise.reject(error);
+});
 
 const App = () => {
 	console.log("App");
@@ -26,35 +50,6 @@ const App = () => {
 			return false;
 		}
 	});
-
-	if (didMount.current === false) {
-			// Add a response interceptor
-		myInterceptor = axios.interceptors.response.use(function (response) {
-			// Any status code that lie within the range of 2xx cause this function to trigger
-			// Do something with response data
-			let { status, msg } = response.data;
-			if (status !== 0) {
-				message.error(msg, 60);
-				if (status === 6 || status === 7) {
-					localStorage.removeItem("token");
-					setSignIn(false);
-				}
-
-				return Promise.reject(response);
-			}
-			return response.data;
-		}, function (error) {
-			// Any status codes that falls outside the range of 2xx cause this function to trigger
-			let { status, msg } = error?.response.data;
-			message.error(msg, 60);
-			if (status === 6 || status === 7) {
-				localStorage.removeItem("token");
-				setSignIn(false);
-			}
-
-			return Promise.reject(error);
-		});
-	}
 
 	useEffect(() => {
 		// if (signIn === false) return;
@@ -87,8 +82,7 @@ const App = () => {
 		// console.log(window.location.port);
 
 		return () => {
-			console.log("unmount");
-			axios.interceptors.response.eject(myInterceptor);
+			console.log("app unmount");
 		}
 	}, []);
 
