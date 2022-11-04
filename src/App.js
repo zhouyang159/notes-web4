@@ -37,7 +37,6 @@ axios.interceptors.response.use(function (response) {
 });
 
 const App = () => {
-	console.log("App");
 	const didMount = useRef(false);
 	const MainRef = useRef(null);
 
@@ -80,10 +79,6 @@ const App = () => {
 		// console.log(process.env);
 		// console.log(window.location.hostname);
 		// console.log(window.location.port);
-
-		return () => {
-			console.log("app unmount");
-		}
 	}, []);
 
 

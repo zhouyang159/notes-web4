@@ -35,8 +35,9 @@ const EditorContainer = styled.div`
 	height: 93%;
 `;
 
-
 const Detail = (props) => {
+	console.log("Detail render");
+
 	const { activeNoteId } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
@@ -49,7 +50,7 @@ const Detail = (props) => {
 	});
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
-	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], (context) => fetchNoteById(activeNoteId, context));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
 			const data = {
@@ -115,6 +116,7 @@ const Detail = (props) => {
 	}
 
 	useEffect(() => {
+		console.log(111);
 		if (didMount.current === false || quill === null) {
 			return;
 		}
@@ -123,11 +125,10 @@ const Detail = (props) => {
 		}
 		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
 		fillQuillContent(quill);
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [activeNoteId, isLoading]);
 
-
 	useEffect(() => {
+		console.log(222);
 		let toolbarOptions = [
 			[{ "header": [1, 2, 3, 4, 5, 6, false] }],
 			["bold", "strike"],        // toggled buttons
@@ -159,14 +160,8 @@ const Detail = (props) => {
 
 		didMount.current = true;
 		return () => {
-			let toolbar = document.querySelector(".ql-toolbar");
-			toolbar.remove();
-
-			let editorContainer = document.querySelector("#editor-container");
-			editorContainer.className = "";
-			editorContainer.innerHTML = "";
+			console.log("Detail unmount");
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return <DetailContainer className="Detail">
@@ -202,7 +197,8 @@ const Detail = (props) => {
 				/>
 			</div>
 		}
-		<EditorContainer id="editor-container"></EditorContainer>
+		<EditorContainer id="editor-container">
+		</EditorContainer>
 	</DetailContainer>
 };
 

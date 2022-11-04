@@ -124,7 +124,7 @@ const Main = (props, ref) => {
 		if (!activeNote) {
 			disabled = false;
 		} else {
-			if(activeNote.title === NEW_NOTE) {
+			if (activeNote.title === NEW_NOTE) {
 				disabled = true;
 			} else {
 				disabled = false;

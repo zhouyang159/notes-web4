@@ -33,10 +33,10 @@ export const fetchNotes = async ({ signal }) => {
 	return list;
 }
 
-export const fetchNoteById = async (id, { signal }) => {
+export const fetchNoteById = async (id) => {
 	console.log("Fetch note by id: " + id);
 
-	const res = await axios.get(`/note/${id}`, { signal });
+	const res = await axios.get(`/note/${id}`);
 	const data = {
 		...res.data,
 		content: JSON.parse(res.data.content),
