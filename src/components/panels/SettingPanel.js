@@ -8,6 +8,24 @@ import { useQueryClient, useQuery, useMutation } from "react-query";
 import { PROFILE } from "../../CONSTANT";
 import { fetchProfile } from "../../API";
 import { debounce } from "debounce";
+import styled from "styled-components";
+
+const ColorBlock = styled.div`
+display: inline-block;
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
+      border: ${({ active = false }) => {
+      if (active) {
+         return "2px solid gray";
+      } else {
+         return "2px solid white";
+      }
+   }};
+      background-color: ${(props) => {
+      return props.backgroundColor;
+   }} ;
+`;
 
 
 const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
@@ -18,11 +36,11 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
    const [username] = useState(() => localStorage.getItem("username"));
    const queryClient = useQueryClient();
    const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+   console.log('profile: ', profile);
 
    const profileMutation = useMutation(
       (newProfile) => {
-         return axios
-            .put(`/user/profile`, newProfile);
+         return axios.put(`/user/profile`, newProfile);
       },
       {
          onSuccess: () => {
@@ -32,16 +50,19 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
       }
    );
 
-   const debounceUpdateBackgroundColor = useMemo(() => {
-      return debounce((color) => {
-         const newProfile = {
-            ...profile,
-            backgroundColor: color,
+   const debounceUpdateProfile = useMemo(() => {
+      return debounce((newProfile) => {
+         newProfile = {
+            ...newProfile,
+            backgroundColor: JSON.stringify(newProfile.backgroundColor),
          }
          profileMutation.mutate(newProfile);
       }, 1000)
-   // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
    }, []);
+
+   let activeColor = profile?.backgroundColor.find((item) => item.active);
+
 
    return <>
       <Modal
@@ -110,15 +131,63 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
                }
             </div>
             <div>background color:</div>
-            <HexColorPicker color={profile?.backgroundColor} onChange={(color) => {
-               queryClient.setQueryData([PROFILE], (old) => {
+            <div>
+               {profile?.backgroundColor?.map((colorItem, idx) => {
+                  return <ColorBlock id={idx} backgroundColor={colorItem.color} active={colorItem.active} onClick={() => {
+                     let tempArr = profile.backgroundColor.map(_item => {
+                        if (colorItem === _item) {
+                           return {
+                              ..._item,
+                              active: true,
+                           }
+                        }
+                        return {
+                           ..._item,
+                           active: false,
+                        }
+                     })
+                     queryClient.setQueryData([PROFILE], (oldProfile) => {
+                        return {
+                           ...oldProfile,
+                           backgroundColor: tempArr,
+                        }
+                     });
+                     const newProfile = {
+                        ...profile,
+                        backgroundColor: tempArr,
+                     }
+      
+                     debounceUpdateProfile(newProfile);
+                  }}></ColorBlock>
+               })}
+            </div>
+            <HexColorPicker color={activeColor?.color} onChange={(newColor) => {
+               let tempArr = profile.backgroundColor.map(item => {
+                  if (activeColor === item) {
+                     return {
+                        color: newColor,
+                        active: true,
+                     }
+                  }
                   return {
-                     ...old,
-                     backgroundColor: color,
+                     ...item,
+                     active: false,
+                  }
+               })
+
+               queryClient.setQueryData([PROFILE], (oldProfile) => {
+                  return {
+                     ...oldProfile,
+                     backgroundColor: tempArr,
                   }
                });
 
-               debounceUpdateBackgroundColor(color);
+               const newProfile = {
+                  ...profile,
+                  backgroundColor: tempArr,
+               }
+
+               debounceUpdateProfile(newProfile);
             }} />
          </Space>
       </Modal>

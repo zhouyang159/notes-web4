@@ -134,9 +134,11 @@ const Main = (props, ref) => {
 		return disabled;
 	}, [activeNoteId, isLoading, noteList]);
 
+	const activeColor = profile?.backgroundColor.find((item) => item.active);
+
 
 	return <MainContainer
-		backgroundColor={profile?.backgroundColor}
+		backgroundColor={activeColor?.color}
 		onClick={(e) => {
 			// 5 min timeout for no modify
 			if (profile?.hasNotePassword) {

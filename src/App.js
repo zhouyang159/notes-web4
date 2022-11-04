@@ -4,7 +4,8 @@ import axios from "axios";
 import { message } from "antd";
 import SignInPanel from "./components/panels/SignInPanel";
 import Main from "./components/Main";
-
+import { useQueryClient } from "react-query";
+import { PROFILE } from "./CONSTANT";
 
 const sessionKey = `${localStorage.getItem("username")}_${new Date().getTime()}`;
 axios.defaults.headers.common["sessionKey"] = sessionKey;
@@ -40,6 +41,7 @@ const App = () => {
 	const didMount = useRef(false);
 	const MainRef = useRef(null);
 
+	const queryClient = useQueryClient();
 	const [signIn, setSignIn] = useState(() => {
 		let token = localStorage.getItem("token");
 		if (token) {
@@ -88,6 +90,7 @@ const App = () => {
 			logOut={() => {
 				localStorage.removeItem("token");
 				setSignIn(false);
+				queryClient.clear();
 				message.success("log out");
 			}}
 		></Main>
