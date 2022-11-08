@@ -14,7 +14,7 @@ import { debounce } from "debounce";
 
 
 const DetailContainer = styled.div`
-	height: 100%;
+	height: 93%;
 	width: 698px;
 	position: relative;
 	.lock_panel{
