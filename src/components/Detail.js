@@ -160,6 +160,9 @@ const Detail = (props) => {
 		didMount.current = true;
 		return () => {
 			let toolbar = document.querySelector(".ql-toolbar");
+			if (!toolbar) {
+				return;
+			}
 			toolbar.remove();
 
 			let editorContainer = document.querySelector("#editor-container");

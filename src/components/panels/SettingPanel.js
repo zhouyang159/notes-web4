@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Button, Modal, message, Input, Space } from "antd";
+import { Button, Modal, message, Input, Space, Switch } from "antd";
 import SetNotePwModal from "../modals/SetNotePwModal";
 import ChangeNotePwModal from "../modals/ChangeNotePwModal";
 import axios from "axios";
@@ -27,7 +27,6 @@ display: inline-block;
    }} ;
 `;
 
-
 const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
    const [editing, setEditing] = useState(false);
    const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
@@ -36,8 +35,6 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
    const [username] = useState(() => localStorage.getItem("username"));
    const queryClient = useQueryClient();
    const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
-   console.log('profile: ', profile);
-
    const profileMutation = useMutation(
       (newProfile) => {
          return axios.put(`/user/profile`, newProfile);
@@ -45,7 +42,6 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
       {
          onSuccess: () => {
             queryClient.invalidateQueries([PROFILE]);
-
          }
       }
    );
@@ -62,6 +58,7 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
    }, []);
 
    let activeColor = profile?.backgroundColor.find((item) => item.active);
+
 
 
    return <>
@@ -94,11 +91,8 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
                         })
                      }}
                      onBlur={() => {
-                        profileMutation.mutate(profile, {
-                           onSuccess: () => {
-                              setEditing(false);
-                           }
-                        });
+                        debounceUpdateProfile(profile);
+                        setEditing(false);
                      }}
                   ></Input>
                }
@@ -133,7 +127,7 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
             <div>background color:</div>
             <div>
                {profile?.backgroundColor?.map((colorItem, idx) => {
-                  return <ColorBlock id={idx} backgroundColor={colorItem.color} active={colorItem.active} onClick={() => {
+                  return <ColorBlock key={idx} backgroundColor={colorItem.color} active={colorItem.active} onClick={() => {
                      let tempArr = profile.backgroundColor.map(_item => {
                         if (colorItem === _item) {
                            return {
@@ -156,7 +150,7 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
                         ...profile,
                         backgroundColor: tempArr,
                      }
-      
+
                      debounceUpdateProfile(newProfile);
                   }}></ColorBlock>
                })}
@@ -189,6 +183,30 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
 
                debounceUpdateProfile(newProfile);
             }} />
+            <div>
+               auto logout: &nbsp; <Switch checked={profile?.autoLogout !== -1} onChange={(checked) => {
+                  let newProfile = null;
+                  if (checked) {
+                     queryClient.setQueriesData([PROFILE], (old) => {
+                        newProfile = {
+                           ...old,
+                           autoLogout: 5,
+                        }
+                        return newProfile;
+                     })
+                  } else {
+                     queryClient.setQueriesData([PROFILE], (old) => {
+                        newProfile = {
+                           ...old,
+                           autoLogout: -1,
+                        }
+                        return newProfile;
+                     })
+                  }
+
+                  debounceUpdateProfile(newProfile);
+               }}></Switch>
+            </div>
          </Space>
       </Modal>
       {

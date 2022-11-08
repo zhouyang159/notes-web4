@@ -1,4 +1,4 @@
-import React, { useState, forwardRef, useImperativeHandle, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import axios from "axios";
 import { Button, message, Dropdown, Menu } from "antd";
@@ -48,15 +48,10 @@ const NoteListContainer = styled.div`
 	background-color: #f0f0f0;
 `;
 
-
+let autoLogoutTimer = null;
 let lockNoteTimer = null;
 
-const Main = (props, ref) => {
-	useImperativeHandle(ref, () => ({
-		refresh: () => {
-			// getNotes();
-		}
-	}));
+const Main = (props) => {
 	const AskNotePasswordModalRef = useRef();
 	const { logOut } = props;
 	const [username] = useState(() => localStorage.getItem("username"));
@@ -78,6 +73,46 @@ const Main = (props, ref) => {
 
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+
+	const setupAutoLogoutTimer = () => {
+		clearTimeout(autoLogoutTimer);
+		autoLogoutTimer = setTimeout(() => {
+			logOut();
+		}, 10 * 60 * 1000);
+	}
+
+	const setupNewTimer = () => {
+		if (profile?.hasNotePassword) {
+			// 5 min timeout to lock secret note
+			clearTimeout(lockNoteTimer);
+			lockNoteTimer = setTimeout(() => {
+				queryClient.setQueryData([PROFILE], (old) => {
+					return {
+						...old,
+						lockNote: true,
+					}
+				});
+			}, 5 * 60 * 1000);
+		}
+
+		if (profile?.autoLogout !== -1) {
+			// time out auto logout
+			setupAutoLogoutTimer();
+		}
+	}
+
+	useEffect(() => {
+		if (profile?.autoLogout === -1) {
+			clearTimeout(autoLogoutTimer);
+		} else {
+			setupAutoLogoutTimer();
+		}
+
+		return () => {
+			clearTimeout(autoLogoutTimer);
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [profile?.autoLogout]);
 
 	const addNoteMutation = useMutation(
 		(newNote) => {
@@ -140,18 +175,10 @@ const Main = (props, ref) => {
 	return <MainContainer
 		backgroundColor={activeColor?.color}
 		onClick={(e) => {
-			// 5 min timeout for no modify
-			if (profile?.hasNotePassword) {
-				clearTimeout(lockNoteTimer);
-				lockNoteTimer = setTimeout(() => {
-					queryClient.setQueryData([PROFILE], (old) => {
-						return {
-							...old,
-							lockNote: true,
-						}
-					});
-				}, 5 * 60 * 1000);
-			}
+			setupNewTimer();
+		}}
+		onKeyUp={() => {
+			setupNewTimer();
 		}}
 	>
 		<Container>
@@ -255,9 +282,6 @@ const Main = (props, ref) => {
 						activeNoteId &&
 						<Detail
 							activeNoteId={activeNoteId}
-							onContentChange={(modifyNote) => {
-								console.log('modifyNote: ', modifyNote);
-							}}
 						>
 						</Detail>
 					}
@@ -276,4 +300,4 @@ const Main = (props, ref) => {
 	</MainContainer>
 }
 
-export default forwardRef(Main);
+export default Main;
