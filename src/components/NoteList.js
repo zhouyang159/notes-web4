@@ -9,7 +9,7 @@ import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
 import SetNotePwModal from "./modals/SetNotePwModal";
 import { NOTES, NEW_NOTE, PROFILE } from "../CONSTANT";
-import { fetchProfile, fetchNotes } from "../API";
+import { fetchProfile, fetchNotes, fetchNoteById } from "../API";
 
 
 const { SubMenu } = Menu;
@@ -19,14 +19,14 @@ const getListStyle = isDraggingOver => ({
 	padding: "8px",
 });
 
-const activeBackground = "#bfde3f";
+const ACTIVE_BACKGROUND_COLOR = "#bfde3f";
 
 const getItemStyle = (isDragging, draggableStyle, active) => {
 	let background = "";
 	if (isDragging) {
-		background = activeBackground;
+		background = ACTIVE_BACKGROUND_COLOR;
 	} else if (active) {
-		background = activeBackground;
+		background = ACTIVE_BACKGROUND_COLOR;
 	}
 
 	return {
@@ -45,7 +45,7 @@ const DraggableItem = styled.div`
 	position: relative;
 	&:hover{
 		transition: all 0.2s ;
-		background: ${props => activeBackground};
+		background: ${props => ACTIVE_BACKGROUND_COLOR};
 	}
 	.title {
 		line-height: normal;
@@ -109,7 +109,10 @@ const NoteList = (props) => {
 	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const liveNoteList = noteList.filter((item) => item.deleted === 0);
 	const trashNoteList = noteList.filter((item) => item.deleted === 1);
-	const activeNote = noteList.find((item) => item.id === activeNoteId);
+	const { data: activeNote } = useQuery([NOTES, activeNoteId], () => {
+		if (activeNoteId === null) return null
+		return fetchNoteById(activeNoteId);
+	});
 
 	const queryClient = useQueryClient();
 	const reorderMutation = useMutation(

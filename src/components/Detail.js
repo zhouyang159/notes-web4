@@ -14,7 +14,7 @@ import { debounce } from "debounce";
 
 
 const DetailContainer = styled.div`
-	height: 93%;
+	height: 100%;
 	width: 698px;
 	position: relative;
 	.lock_panel{
@@ -30,11 +30,10 @@ const DetailContainer = styled.div`
 			margin-bottom: 5px;
 		}
 	}
+	.ql-container{
+		height: 93%;
+	}
 `;
-const EditorContainer = styled.div`
-	height: 93%;
-`;
-
 
 const Detail = (props) => {
 	const { activeNoteId } = props;
@@ -126,7 +125,6 @@ const Detail = (props) => {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [activeNoteId, isLoading]);
 
-
 	useEffect(() => {
 		let toolbarOptions = [
 			[{ "header": [1, 2, 3, 4, 5, 6, false] }],
@@ -205,7 +203,7 @@ const Detail = (props) => {
 				/>
 			</div>
 		}
-		<EditorContainer id="editor-container"></EditorContainer>
+		<div id="editor-container"></div>
 	</DetailContainer>
 };
 
