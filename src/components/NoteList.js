@@ -101,18 +101,29 @@ const ConfirmContent = styled.div`
 `;
 
 const NoteList = (props) => {
-	const { activeNoteId, setActiveNoteId, validateNotePassword } = props;
+	const { activeNoteId, setActiveNoteId, validateNotePassword, searchStr } = props;
 
 	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const username = useState(() => localStorage.getItem("username"))[0];
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
-	const liveNoteList = noteList.filter((item) => item.deleted === 0);
-	const trashNoteList = noteList.filter((item) => item.deleted === 1);
+	const liveNoteList = noteList.filter((item) => item.deleted === 0).filter((item) => {
+		if(item.text.toLowerCase().indexOf(searchStr.toLowerCase()) > -1) {
+			return true;			
+		}
+		return false;
+	});
+	const trashNoteList = noteList.filter((item) => item.deleted === 1).filter((item) => {
+		if(item.text.toLowerCase().indexOf(searchStr.toLowerCase()) > -1) {
+			return true;			
+		}
+		return false;
+	});
 	const { data: activeNote } = useQuery([NOTES, activeNoteId], () => {
 		if (activeNoteId === null) return null
 		return fetchNoteById(activeNoteId);
 	});
+
 
 	const queryClient = useQueryClient();
 	const reorderMutation = useMutation(
@@ -165,21 +176,14 @@ const NoteList = (props) => {
 		}
 	);
 	const recoverNoteMutation = useMutation(
-		(id) => {
-			const find = trashNoteList.find((item) => {
-				if (item.id === id) {
-					return true;
-				}
-				return false;
-			});
-
+		() => {
 			const newNote = {
-				...find,
-				content: JSON.stringify(find.content),
+				...activeNote,
+				content: JSON.stringify(activeNote.content),
 				deleted: 0,
 				updateTime: moment(),
 			}
-			return axios.put("/note/reorder", newNote);
+			return axios.put("/note", newNote);
 		},
 		{
 			onSuccess: () => {
@@ -206,7 +210,7 @@ const NoteList = (props) => {
 				...newNote,
 				content: JSON.stringify(newNote.content),
 			}
-			return axios.put("/note/reorder", data);
+			return axios.put("/note", data);
 		},
 		{
 			onSuccess: () => {
@@ -323,7 +327,7 @@ const NoteList = (props) => {
 			<div
 				className="item"
 				onClick={() => {
-					recoverNoteMutation.mutate(activeNoteId);
+					recoverNoteMutation.mutate();
 				}}
 			>
 				recover

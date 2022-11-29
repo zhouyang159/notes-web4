@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import axios from "axios";
-import { Button, message, Dropdown, Menu } from "antd";
+import { Button, message, Dropdown, Menu, Input } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
@@ -23,7 +23,7 @@ const MainContainer = styled.div`
 	height: 100%;
 `
 
-const Container = styled.div`
+const HeaderContainer = styled.div`
 	margin: 0 auto;
 	padding-top: 10px;
 	padding-bottom: 10px;
@@ -46,6 +46,14 @@ const NoteListContainer = styled.div`
 	height: 100%;
 	overflow-y: auto;
 	background-color: #f0f0f0;
+`;
+
+const FilterContainer = styled.div`
+	display: flex;
+	justify-content: flex-end;
+	.input {
+		width: 300px;
+	}
 `;
 
 let autoLogoutTimer = null;
@@ -73,6 +81,8 @@ const Main = (props) => {
 
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+
+	const [searchStr, setSearchStr] = useState("");
 
 	const setupAutoLogoutTimer = () => {
 		clearTimeout(autoLogoutTimer);
@@ -111,7 +121,7 @@ const Main = (props) => {
 		return () => {
 			clearTimeout(autoLogoutTimer);
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [profile?.autoLogout]);
 
 	const addNoteMutation = useMutation(
@@ -181,7 +191,7 @@ const Main = (props) => {
 			setupNewTimer();
 		}}
 	>
-		<Container>
+		<HeaderContainer>
 			<H1>
 				<div>
 					<span
@@ -266,6 +276,13 @@ const Main = (props) => {
 					</Dropdown>
 				</div>
 			</H1>
+			<FilterContainer>
+				<Input
+					className="input"
+					onChange={(e) => {
+						setSearchStr(e.target.value);
+					}}></Input>
+			</FilterContainer>
 			<Body onClick={() => {
 				document.getElementById("Menu").style.display = "none";
 				document.getElementById("Menu2").style.display = "none";
@@ -275,6 +292,7 @@ const Main = (props) => {
 						activeNoteId={activeNoteId}
 						setActiveNoteId={setActiveNoteId}
 						validateNotePassword={validateNotePassword}
+						searchStr={searchStr}
 					></NoteList>
 				</NoteListContainer>
 				<div>
@@ -282,12 +300,17 @@ const Main = (props) => {
 						activeNoteId &&
 						<Detail
 							activeNoteId={activeNoteId}
+							searchStr={searchStr}
 						>
 						</Detail>
 					}
 				</div>
 			</Body>
-		</Container>
+		</HeaderContainer>
+		<div style={{ display: "none" }}>
+			<div id="temp-toolbar"></div>
+			<div id="temp-editor-container"></div>
+		</div>
 		{
 			settingPanelOpen && <SettingPanel
 				isModalOpen={settingPanelOpen}

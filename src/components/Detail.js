@@ -36,7 +36,7 @@ const DetailContainer = styled.div`
 `;
 
 const Detail = (props) => {
-	const { activeNoteId } = props;
+	const { activeNoteId, searchStr } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
 	const [oldTextChangeHandler, setOldTextChangeHandler] = useState(() => {
@@ -55,7 +55,7 @@ const Detail = (props) => {
 				...newNote,
 				content: JSON.stringify(newNote.content),
 			}
-			return axios.put("/note/reorder", data);
+			return axios.put("/note", data);
 		},
 		{
 			onSuccess: () => {
@@ -72,7 +72,7 @@ const Detail = (props) => {
 			patchNoteMutation.mutate(newNote);
 		}, 700);
 
-		const newTextChangeHandler = () => {
+		const newTextChangeHandler = (eventName, ...args) => {
 			let title = "";
 			let text = JSON.stringify(quill.getText(0, 200).trim());
 
@@ -122,7 +122,7 @@ const Detail = (props) => {
 		}
 		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
 		fillQuillContent(quill);
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [activeNoteId, isLoading]);
 
 	useEffect(() => {
@@ -167,8 +167,28 @@ const Detail = (props) => {
 			editorContainer.className = "";
 			editorContainer.innerHTML = "";
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
+
+	useEffect(() => {
+		if (didMount.current === false || quill === null) {
+			return;
+		}
+
+		quill.off("text-change", oldTextChangeHandler);
+		quill.setContents(curNote?.content);
+
+		if (!searchStr) {
+			quill.on("text-change", oldTextChangeHandler);
+			return;
+		}
+
+		const text = quill.getText();
+		let i = searchStr.length * -1;
+		while (~(i = text.toLowerCase().indexOf(searchStr.toLowerCase(), i + searchStr.length))) {
+			quill.formatText(i, searchStr.length, 'background', '#ffda90');
+		}
+	}, [searchStr]);
 
 	return <DetailContainer className="Detail">
 		{
@@ -204,7 +224,7 @@ const Detail = (props) => {
 			</div>
 		}
 		<div id="editor-container"></div>
-	</DetailContainer>
+	</DetailContainer >
 };
 
 export default Detail;

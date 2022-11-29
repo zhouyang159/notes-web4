@@ -1,5 +1,6 @@
 import axios from "axios";
 import moment from "moment";
+import Quill from "quill";
 
 export const fetchProfile = async (username) => {
 	console.log("Fetch profile");
@@ -56,10 +57,23 @@ export const fetchNotes = async ({ signal }) => {
 
 	const response = await axios.get("/note/findAll", { signal });
 
+	const options = {
+		modules: {
+			toolbar: '#temp-toolbar'
+		},
+		placeholder: 'Compose an epic...',
+		readOnly: true,
+		theme: 'snow'
+	};
+	let quill = new Quill("#temp-editor-container", options);
+
 	let list = response.data.map((note) => {
+		quill.setContents(JSON.parse(note.content));
+
 		return {
 			...note,
-			content: JSON.parse(note.content),
+			content: quill.getContents,
+			text: quill.getText(),
 			createTime: moment(note.createTime),
 			updateTime: moment(note.updateTime),
 			deleteTime: moment(note.deleteTime),
