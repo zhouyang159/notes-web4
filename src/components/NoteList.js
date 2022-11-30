@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "react-query";
 import { message, Menu, Modal } from "antd";
 import { AppstoreOutlined, DeleteOutlined, ExclamationCircleOutlined, LockFilled } from "@ant-design/icons";
@@ -237,6 +237,16 @@ const NoteList = (props) => {
 			return null;
 		}
 	}
+
+	useEffect(() => {
+		if (searchStr !== "") {
+			if(liveNoteList.length > 0) {
+				setActiveNoteId(liveNoteList[0].id);
+			} else if (trashNoteList.length > 0) {
+				setActiveNoteId(trashNoteList[0].id);
+			}
+		}
+	}, [searchStr]);
 
 	return <>
 		<ContextMenu id="Menu">

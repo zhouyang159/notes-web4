@@ -42,6 +42,7 @@ const Detail = (props) => {
 	const [oldTextChangeHandler, setOldTextChangeHandler] = useState(() => {
 		return () => { };
 	});
+	const [isHightLight, setIsHightLight] = useState(false);
 
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
@@ -64,7 +65,7 @@ const Detail = (props) => {
 		}
 	);
 
-	const fillQuillContent = (quill) => {
+	const fillQuillContent = (quill, cb = () => { }) => {
 		quill.off("text-change", oldTextChangeHandler);
 		quill.setContents(curNote?.content);
 
@@ -109,7 +110,30 @@ const Detail = (props) => {
 			quill.enable(false);
 		} else {
 			quill.enable();
-			quill.blur();
+
+			if (searchStr === "") {
+				quill.blur();
+			}
+		}
+
+		cb(quill, newTextChangeHandler);
+	}
+
+	const hightLightSearchStr = (quill, textChangeHandler, searchStr) => {
+		quill.off("text-change", textChangeHandler);
+		quill.setContents(curNote?.content);
+
+		if (!searchStr) {
+			quill.on("text-change", textChangeHandler);
+			setIsHightLight(false);
+			return;
+		}
+
+		setIsHightLight(true);
+		const text = quill.getText();
+		let i = searchStr.length * -1;
+		while (~(i = text.toLowerCase().indexOf(searchStr.toLowerCase(), i + searchStr.length))) {
+			quill.formatText(i, searchStr.length, 'background', '#ffda90');
 		}
 	}
 
@@ -120,10 +144,22 @@ const Detail = (props) => {
 		if (isLoading) {
 			return;
 		}
+
+		fillQuillContent(quill, (quill, textChangeHandler) => {
+			hightLightSearchStr(quill, textChangeHandler, searchStr);
+		});
+
 		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
-		fillQuillContent(quill);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [activeNoteId, isLoading]);
+
+	useEffect(() => {
+		if (didMount.current === false || quill === null) {
+			return;
+		}
+
+		hightLightSearchStr(quill, oldTextChangeHandler, searchStr);
+	}, [searchStr]);
 
 	useEffect(() => {
 		let toolbarOptions = [
@@ -163,68 +199,61 @@ const Detail = (props) => {
 			}
 			toolbar.remove();
 
-			let editorContainer = document.querySelector("#editor-container");
-			editorContainer.className = "";
-			editorContainer.innerHTML = "";
+			// let editorContainer = document.querySelector("#editor-container");
+			// editorContainer.className = "";
+			// editorContainer.innerHTML = "";
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	useEffect(() => {
-		if (didMount.current === false || quill === null) {
-			return;
-		}
+	return <DetailContainer className="Detail"
+		onClick={() => {
+			if (isHightLight) {
+				quill.off("text-change", oldTextChangeHandler);
 
-		quill.off("text-change", oldTextChangeHandler);
-		quill.setContents(curNote?.content);
-
-		if (!searchStr) {
-			quill.on("text-change", oldTextChangeHandler);
-			return;
-		}
-
-		const text = quill.getText();
-		let i = searchStr.length * -1;
-		while (~(i = text.toLowerCase().indexOf(searchStr.toLowerCase(), i + searchStr.length))) {
-			quill.formatText(i, searchStr.length, 'background', '#ffda90');
-		}
-	}, [searchStr]);
-
-	return <DetailContainer className="Detail">
+				const range = quill.getSelection();
+				quill.setContents(curNote?.content);
+				quill.setSelection(range.index, 0); // position the cursor in mouse click
+				quill.on("text-change", oldTextChangeHandler);
+				setIsHightLight(false);
+			}
+		}}
+	>
 		{
 			curNote?.encrypt && profile.lockNote && <div className="lock_panel">
 				<Result
 					icon={<LockFilled />}
 					title="This note had been lock"
 					subTitle="enter password to unlock this note"
-					extra={<Input type="password" style={{ width: 180 }} size="small" onPressEnter={(e) => {
-						const key = "messageKey";
-						message.loading({ content: "unlocking...", key });
+					extra={<Input type="password" style={{ width: 180 }} size="small"
+						onPressEnter={(e) => {
+							const key = "messageKey";
+							message.loading({ content: "unlocking...", key });
 
-						axios
-							.post(`/user/validateNotePassword/${e.target.value}`)
-							.then((res) => {
-								if (res.status === 0) {
-									setTimeout(() => {
-										message.success({ content: "unlock!", key, duration: 2 });
-										queryClient.setQueryData([PROFILE], (old) => {
-											return {
-												...old,
-												lockNote: false,
-											}
-										});
-									}, 1000);
-								}
-							})
-							.catch(() => {
-								message.destroy(key);
-							});
-					}}></Input>}
+							axios
+								.post(`/user/validateNotePassword/${e.target.value}`)
+								.then((res) => {
+									if (res.status === 0) {
+										setTimeout(() => {
+											message.success({ content: "unlock!", key, duration: 2 });
+											queryClient.setQueryData([PROFILE], (old) => {
+												return {
+													...old,
+													lockNote: false,
+												}
+											});
+										}, 1000);
+									}
+								})
+								.catch(() => {
+									message.destroy(key);
+								});
+						}}></Input>}
 				/>
 			</div>
 		}
 		<div id="editor-container"></div>
-	</DetailContainer >
+	</DetailContainer>
 };
 
 export default Detail;

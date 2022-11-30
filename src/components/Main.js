@@ -279,6 +279,8 @@ const Main = (props) => {
 			<FilterContainer>
 				<Input
 					className="input"
+					allowClear
+					placeholder="type to search"
 					onChange={(e) => {
 						setSearchStr(e.target.value);
 					}}></Input>

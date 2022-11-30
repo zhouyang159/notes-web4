@@ -80,6 +80,10 @@ export const fetchNotes = async ({ signal }) => {
 		}
 	});
 
+	list.sort((a, b) => {
+		return a.number - b.number;
+	});
+
 	return list;
 }
 
