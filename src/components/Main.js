@@ -6,7 +6,7 @@ import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-des
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
-import NoteList from "./NoteList";
+import NoteList from "./NoteList/index";
 import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
