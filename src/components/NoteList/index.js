@@ -137,8 +137,13 @@ const SearchResultList = ({
 				}
 				return false;
 			});
-
 			setSearchResult(temp);
+
+			if(temp.length > 0) {
+				setActiveNoteId(temp[0].id);
+			} else {
+				setActiveNoteId(null);
+			}
 		} else {
 			setSearchResult([]);
 		}
@@ -403,7 +408,7 @@ const NoteList = (props) => {
 				delete
 			</div>
 		</ContextMenu>
-		
+
 		{
 			searchStr === "" && <div className="NoteList">
 				<Menu
