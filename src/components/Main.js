@@ -2,16 +2,19 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient, useIsFetching } from "react-query";
 import axios from "axios";
 import { Button, message, Dropdown, Menu, Input } from "antd";
-import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled } from "@ant-design/icons";
+import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled, SearchOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import styled from "styled-components";
 import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
-import NoteList from "./NoteList";
+import NoteList from "./NoteList/index";
 import Detail from "./Detail";
 import SettingPanel from "./panels/SettingPanel";
 import AskNotePasswordModal from "./modals/AskNotePasswordModal";
 import { PROFILE, NOTES, NEW_NOTE } from "../CONSTANT.js";
 import { fetchNotes, fetchProfile } from "../API";
+
+const ICON_MARGIN_RIGHT = 10;
+
 
 const MainContainer = styled.div`
 	background: ${(props) => {
@@ -33,6 +36,10 @@ const H1 = styled.h1`
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
+	.buttons_container {
+		display: flex;
+		align-items: center;
+	}
 `;
 const Body = styled.div`
 	border: 1px solid gray;
@@ -48,13 +55,25 @@ const NoteListContainer = styled.div`
 	background-color: #f0f0f0;
 `;
 
-const FilterContainer = styled.div`
-	display: flex;
-	justify-content: flex-end;
-	.input {
-		width: 300px;
-	}
+const SearchInputContainer = styled.div`
+	display: inline-block;
+	height: 30px;
+	-webkit-transition: all 1s;
+	transition: all 0.4s;
+	overflow-x: hidden;
+	height: 24px;
+	margin-right: 10px;
+	width: ${(props) => {
+		const { showSearchInput } = props;
+
+		if (showSearchInput) {
+			return "200px"
+		} else {
+			return "25px"
+		}
+	}};
 `;
+
 
 let autoLogoutTimer = null;
 let lockNoteTimer = null;
@@ -82,6 +101,7 @@ const Main = (props) => {
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 
+	const [showSearchInput, setShowSearchInput] = useState(false);
 	const [searchStr, setSearchStr] = useState("");
 
 	const setupAutoLogoutTimer = () => {
@@ -201,11 +221,11 @@ const Main = (props) => {
 					</span>
 					{isLoading && <SyncOutlined spin style={{ fontSize: "16px" }} />}
 				</div>
-				<div>
-					<span style={{ marginRight: 10 }}>{profile?.nickname || profile?.username}</span>
+				<div className="buttons_container">
+					<span style={{ marginRight: ICON_MARGIN_RIGHT }}>{profile?.nickname || profile?.username}</span>
 					<Button
 						disabled={disabledNewBtn()}
-						size="small" shape="circle" style={{ marginRight: 10 }}
+						size="small" shape="circle" style={{ marginRight: ICON_MARGIN_RIGHT }}
 						icon={
 							<EditFilled
 								onClick={() => {
@@ -234,7 +254,7 @@ const Main = (props) => {
 					>
 					</Button>
 					{
-						profile?.hasNotePassword && <Button size="small" shape="circle" style={{ marginRight: 10 }} icon={
+						profile?.hasNotePassword && <Button size="small" shape="circle" style={{ marginRight: ICON_MARGIN_RIGHT }} icon={
 							profile?.lockNote ?
 								<LockFilled
 									onClick={async () => {
@@ -254,6 +274,47 @@ const Main = (props) => {
 									}}
 								></span>
 						} />
+					}
+					{
+						<SearchInputContainer
+							showSearchInput={showSearchInput}
+							onClick={() => {
+								setShowSearchInput(true);
+							}}
+						>
+							<Input
+								className="input"
+								placeholder="type to search"
+								value={searchStr}
+								onChange={(e) => {
+									setSearchStr(e.target.value);
+								}}
+								onKeyUp={(e) => {
+									if (e.key === "Escape") {
+										setSearchStr("");
+										setShowSearchInput(false);
+									}
+								}}
+								size="small"
+								style={{
+									borderRadius: 15,
+									float: "left",
+								}}
+								prefix={<SearchOutlined
+									onClick={() => {
+										setShowSearchInput(true);
+									}}
+								/>}
+								suffix={<CloseCircleOutlined style={{ cursor: "pointer" }}
+									onClick={() => {
+										setSearchStr("");
+										setTimeout(() => {
+											setShowSearchInput(false);
+										}, 0);
+									}}
+								/>}
+							></Input>
+						</SearchInputContainer>
 					}
 					<Dropdown
 						overlay={
@@ -276,15 +337,6 @@ const Main = (props) => {
 					</Dropdown>
 				</div>
 			</H1>
-			<FilterContainer>
-				<Input
-					className="input"
-					allowClear
-					placeholder="type to search"
-					onChange={(e) => {
-						setSearchStr(e.target.value);
-					}}></Input>
-			</FilterContainer>
 			<Body onClick={() => {
 				document.getElementById("Menu").style.display = "none";
 				document.getElementById("Menu2").style.display = "none";

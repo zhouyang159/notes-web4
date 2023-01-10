@@ -7,9 +7,9 @@ import { useMutation, useQueryClient } from "react-query";
 import axios from "axios";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import moment from "moment";
-import SetNotePwModal from "./modals/SetNotePwModal";
-import { NOTES, NEW_NOTE, PROFILE } from "../CONSTANT";
-import { fetchProfile, fetchNotes, fetchNoteById } from "../API";
+import SetNotePwModal from "../modals/SetNotePwModal";
+import { NOTES, NEW_NOTE, PROFILE } from "../../CONSTANT";
+import { fetchProfile, fetchNotes, fetchNoteById } from "../../API";
 
 
 const { SubMenu } = Menu;
@@ -100,6 +100,72 @@ const ConfirmContent = styled.div`
 	}
 `;
 
+const getLockIcon = (note, profile) => {
+	if (note.encrypt) {
+		if (profile?.lockNote) {
+			return <LockFilled />
+		} else {
+			return <span className="iconfont icon-unlocked"></span>
+		}
+	} else {
+		return null;
+	}
+}
+
+const SearchResultListContainer = styled.div`
+	padding: 10px ;
+	>.title {
+		padding-left: 5px;
+		border-bottom: 1px solid gray;
+	}
+`;
+
+const SearchResultList = ({
+	liveNoteList = [],
+	searchStr = "",
+	activeNoteId = null,
+	setActiveNoteId = () => { },
+	profile = {},
+}) => {
+	const [searchResult, setSearchResult] = useState([]);
+
+	useEffect(() => {
+		if (searchStr !== "") {
+			const temp = liveNoteList.filter((item) => {
+				if (item.text.indexOf(searchStr) !== -1) {
+					return true;
+				}
+				return false;
+			});
+
+			setSearchResult(temp);
+		} else {
+			setSearchResult([]);
+		}
+	}, [searchStr]);
+
+
+	return <SearchResultListContainer>
+		<h2 className="title">search result</h2>
+		{
+			searchResult.map((note) => {
+				return <DraggableItem
+					style={{
+						background: note.id === activeNoteId && ACTIVE_BACKGROUND_COLOR,
+					}}
+					onClick={() => {
+						setActiveNoteId(note.id);
+					}}
+				>
+					<div className="title">{note.title}</div>
+					<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+					<div className="lock_icon">{getLockIcon(note, profile)}</div>
+				</DraggableItem>
+			})
+		}
+	</SearchResultListContainer>
+}
+
 const NoteList = (props) => {
 	const { activeNoteId, setActiveNoteId, validateNotePassword, searchStr } = props;
 
@@ -107,18 +173,8 @@ const NoteList = (props) => {
 	const username = useState(() => localStorage.getItem("username"))[0];
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
-	const liveNoteList = noteList.filter((item) => item.deleted === 0).filter((item) => {
-		if(item.text.toLowerCase().indexOf(searchStr.toLowerCase()) > -1) {
-			return true;			
-		}
-		return false;
-	});
-	const trashNoteList = noteList.filter((item) => item.deleted === 1).filter((item) => {
-		if(item.text.toLowerCase().indexOf(searchStr.toLowerCase()) > -1) {
-			return true;			
-		}
-		return false;
-	});
+	const liveNoteList = noteList.filter((item) => item.deleted === 0);
+	const trashNoteList = noteList.filter((item) => item.deleted === 1);
 	const { data: activeNote } = useQuery([NOTES, activeNoteId], () => {
 		if (activeNoteId === null) return null
 		return fetchNoteById(activeNoteId);
@@ -226,27 +282,6 @@ const NoteList = (props) => {
 		Menu2.style.display = "none";
 	}
 
-	const getLockIcon = (note) => {
-		if (note.encrypt) {
-			if (profile?.lockNote) {
-				return <LockFilled />
-			} else {
-				return <span className="iconfont icon-unlocked"></span>
-			}
-		} else {
-			return null;
-		}
-	}
-
-	useEffect(() => {
-		if (searchStr !== "") {
-			if(liveNoteList.length > 0) {
-				setActiveNoteId(liveNoteList[0].id);
-			} else if (trashNoteList.length > 0) {
-				setActiveNoteId(trashNoteList[0].id);
-			}
-		}
-	}, [searchStr]);
 
 	return <>
 		<ContextMenu id="Menu">
@@ -368,142 +403,155 @@ const NoteList = (props) => {
 				delete
 			</div>
 		</ContextMenu>
-		<div className="NoteList">
-			<Menu
-				defaultOpenKeys={["sub1", "sub2"]}
-				mode="inline"
-				selectedKeys={[]}
-			>
-				<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
-					<DragDropContext
-						onDragStart={() => {
-						}}
-						onDragEnd={(result) => {
-							if (!result.destination) {
-								return;
-							}
-
-							let newLiveNoteList = Array.from(liveNoteList);
-							const [removed] = newLiveNoteList.splice(result.source.index, 1);
-							newLiveNoteList.splice(result.destination.index, 0, removed);
-							for (let i = 0; i < newLiveNoteList.length; i++) {
-								newLiveNoteList[i].number = i;
-							}
-
-							reorderMutation.mutate(newLiveNoteList);
-						}}
-					>
-						<Droppable droppableId="droppable">
-							{(provided, snapshot) => {
-								return <div
-									{...provided.droppableProps}
-									ref={provided.innerRef}
-									style={getListStyle(snapshot.isDraggingOver)}
-								>
-									{liveNoteList.map((note, index) => {
-										return <Draggable key={note.id} draggableId={note.id} index={index}>
-											{(provided, snapshot) => (
-												<DraggableItem
-													id={note.id.substring(0, note.id.indexOf("-"))}
-													ref={provided.innerRef}
-													{...provided.draggableProps}
-													{...provided.dragHandleProps}
-													style={getItemStyle(
-														snapshot.isDragging,
-														provided.draggableProps.style,
-														note.id === activeNoteId
-													)}
-													onClick={() => {
-														liveNoteList.forEach(item => {
-															if (item.title === NEW_NOTE && item.id !== note.id) {
-																// this note's content is empty, we delete it forever
-																axios.delete(`/note/${item.id}`)
-																	.then(() => {
-																		queryClient.refetchQueries([NOTES]);
-																	})
-																	.catch((err) => {
-																		message.error("delete note error");
-																		console.log(err);
-																	});
-															}
-														});
-
-														setActiveNoteId(note.id);
-													}}
-													onContextMenu={(e) => {
-														e.preventDefault();
-														hideContextMenu();
-														setActiveNoteId(note.id);
-
-														const clickX = e.clientX;
-														const clickY = e.clientY;
-														const Menu = document.getElementById("Menu");
-														Menu.style.display = "block";
-														Menu.style.position = "absolute";
-														Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
-													}}
-												>
-													<div className="title">{note.title}</div>
-													<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
-													<div className="lock_icon">{getLockIcon(note)}</div>
-												</DraggableItem>
-											)}
-										</Draggable>
-									})}
-									{provided.placeholder}
-								</div>
+		
+		{
+			searchStr === "" && <div className="NoteList">
+				<Menu
+					defaultOpenKeys={["sub1", "sub2"]}
+					mode="inline"
+					selectedKeys={[]}
+				>
+					<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
+						<DragDropContext
+							onDragStart={() => {
 							}}
-						</Droppable>
-					</DragDropContext>
-				</SubMenu>
+							onDragEnd={(result) => {
+								if (!result.destination) {
+									return;
+								}
 
-				<SubMenu key="sub2" icon={<DeleteOutlined />} title="Trash">
-					<div
-						style={getListStyle(false)}
-					>
-						{trashNoteList.map((note) => {
-							let eraseDate = moment(note.deleteTime).add(11, "days");
-							let remainingDay = eraseDate.diff(moment(), "days");
+								let newLiveNoteList = Array.from(liveNoteList);
+								const [removed] = newLiveNoteList.splice(result.source.index, 1);
+								newLiveNoteList.splice(result.destination.index, 0, removed);
+								for (let i = 0; i < newLiveNoteList.length; i++) {
+									newLiveNoteList[i].number = i;
+								}
 
-							let dangerText = false;
-							if (remainingDay < 3) {
-								dangerText = true;
-							}
+								reorderMutation.mutate(newLiveNoteList);
+							}}
+						>
+							<Droppable droppableId="droppable">
+								{(provided, snapshot) => {
+									return <div
+										{...provided.droppableProps}
+										ref={provided.innerRef}
+										style={getListStyle(snapshot.isDraggingOver)}
+									>
+										{liveNoteList.map((note, index) => {
+											return <Draggable key={note.id} draggableId={note.id} index={index}>
+												{(provided, snapshot) => (
+													<DraggableItem
+														id={note.id.substring(0, note.id.indexOf("-"))}
+														ref={provided.innerRef}
+														{...provided.draggableProps}
+														{...provided.dragHandleProps}
+														style={getItemStyle(
+															snapshot.isDragging,
+															provided.draggableProps.style,
+															note.id === activeNoteId
+														)}
+														onClick={() => {
+															liveNoteList.forEach(item => {
+																if (item.title === NEW_NOTE && item.id !== note.id) {
+																	// this note's content is empty, we delete it forever
+																	axios.delete(`/note/${item.id}`)
+																		.then(() => {
+																			queryClient.refetchQueries([NOTES]);
+																		})
+																		.catch((err) => {
+																			message.error("delete note error");
+																			console.log(err);
+																		});
+																}
+															});
 
-							return <DraggableItem
-								key={note.id}
-								dangerText={dangerText}
-								style={getItemStyle(
-									false,
-									{},
-									note.id === activeNoteId,
-								)}
-								onClick={() => {
-									setActiveNoteId(note.id);
+															setActiveNoteId(note.id);
+														}}
+														onContextMenu={(e) => {
+															e.preventDefault();
+															hideContextMenu();
+															setActiveNoteId(note.id);
+
+															const clickX = e.clientX;
+															const clickY = e.clientY;
+															const Menu = document.getElementById("Menu");
+															Menu.style.display = "block";
+															Menu.style.position = "absolute";
+															Menu.style.left = `${clickX}px`; Menu.style.top = `${clickY}px`;
+														}}
+													>
+														<div className="title">{note.title}</div>
+														<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+														<div className="lock_icon">{getLockIcon(note, profile)}</div>
+													</DraggableItem>
+												)}
+											</Draggable>
+										})}
+										{provided.placeholder}
+									</div>
 								}}
-								onContextMenu={(e) => {
-									hideContextMenu();
-									setActiveNoteId(note.id);
+							</Droppable>
+						</DragDropContext>
+					</SubMenu>
 
-									e.preventDefault();
-									const clickX = e.clientX;
-									const clickY = e.clientY;
-									const Menu = document.getElementById("Menu2");
-									Menu.style.display = "block";
-									Menu.style.position = "absolute";
-									Menu.style.left = `${clickX}px`;
-									Menu.style.top = `${clickY}px`;
-								}}
-							>
-								<div className="title">{note.title}</div>
-								<div className="date">{remainingDay} days</div>
-								<div className="lock_icon">{getLockIcon(note)}</div>
-							</DraggableItem>
-						})}
-					</div>
-				</SubMenu>
-			</Menu>
-		</div >
+					<SubMenu key="sub2" icon={<DeleteOutlined />} title="Trash">
+						<div
+							style={getListStyle(false)}
+						>
+							{trashNoteList.map((note) => {
+								let eraseDate = moment(note.deleteTime).add(11, "days");
+								let remainingDay = eraseDate.diff(moment(), "days");
+
+								let dangerText = false;
+								if (remainingDay < 3) {
+									dangerText = true;
+								}
+
+								return <DraggableItem
+									key={note.id}
+									dangerText={dangerText}
+									style={getItemStyle(
+										false,
+										{},
+										note.id === activeNoteId,
+									)}
+									onClick={() => {
+										setActiveNoteId(note.id);
+									}}
+									onContextMenu={(e) => {
+										hideContextMenu();
+										setActiveNoteId(note.id);
+
+										e.preventDefault();
+										const clickX = e.clientX;
+										const clickY = e.clientY;
+										const Menu = document.getElementById("Menu2");
+										Menu.style.display = "block";
+										Menu.style.position = "absolute";
+										Menu.style.left = `${clickX}px`;
+										Menu.style.top = `${clickY}px`;
+									}}
+								>
+									<div className="title">{note.title}</div>
+									<div className="date">{remainingDay} days</div>
+									<div className="lock_icon">{getLockIcon(note, profile)}</div>
+								</DraggableItem>
+							})}
+						</div>
+					</SubMenu>
+				</Menu>
+			</div >
+		}
+
+		{
+			searchStr !== "" && <SearchResultList
+				liveNoteList={liveNoteList}
+				searchStr={searchStr}
+				activeNoteId={activeNoteId}
+				setActiveNoteId={setActiveNoteId}
+				profile={profile}
+			></SearchResultList>
+		}
 
 		{
 			isSetNotePwModalOpen && <SetNotePwModal
