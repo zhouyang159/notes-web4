@@ -116,7 +116,7 @@ const SearchResultListContainer = styled.div`
 	padding: 10px ;
 	>.title {
 		padding-left: 5px;
-		border-bottom: 1px solid gray ;
+		border-bottom: 1px solid gray;
 	}
 `;
 
@@ -125,7 +125,6 @@ const SearchResultList = ({
 	searchStr = "",
 	activeNoteId = null,
 	setActiveNoteId = () => { },
-	getLockIcon = () => { },
 	profile = {},
 }) => {
 	const [searchResult, setSearchResult] = useState([]);
