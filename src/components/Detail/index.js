@@ -8,8 +8,8 @@ import moment from "moment";
 import { Input, message, } from "antd";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "react-query";
-import { PROFILE, NOTES } from "../CONSTANT";
-import { fetchProfile, fetchNoteById } from "../API";
+import { PROFILE, NOTES } from "../../CONSTANT";
+import { fetchProfile, fetchNoteById } from "../../API";
 import { debounce } from "debounce";
 
 
