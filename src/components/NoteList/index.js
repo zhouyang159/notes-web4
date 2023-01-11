@@ -12,6 +12,26 @@ import { NOTES, NEW_NOTE, PROFILE } from "../../CONSTANT";
 import { fetchProfile, fetchNotes, fetchNoteById } from "../../API";
 
 
+const StrictModeDroppable = ({ children, ...props }) => {
+	const [enabled, setEnabled] = useState(false);
+
+	useEffect(() => {
+		const animation = requestAnimationFrame(() => setEnabled(true));
+
+		return () => {
+			cancelAnimationFrame(animation);
+			setEnabled(false);
+		};
+	}, []);
+
+	if (!enabled) {
+		return null;
+	}
+
+	return <Droppable {...props}>{children}</Droppable>;
+};
+
+
 const { SubMenu } = Menu;
 
 const getListStyle = isDraggingOver => ({
@@ -139,7 +159,7 @@ const SearchResultList = ({
 			});
 			setSearchResult(temp);
 
-			if(temp.length > 0) {
+			if (temp.length > 0) {
 				setActiveNoteId(temp[0].id);
 			} else {
 				setActiveNoteId(null);
@@ -418,8 +438,6 @@ const NoteList = (props) => {
 				>
 					<SubMenu key="sub1" icon={<AppstoreOutlined />} title="Notes">
 						<DragDropContext
-							onDragStart={() => {
-							}}
 							onDragEnd={(result) => {
 								if (!result.destination) {
 									return;
@@ -435,7 +453,7 @@ const NoteList = (props) => {
 								reorderMutation.mutate(newLiveNoteList);
 							}}
 						>
-							<Droppable droppableId="droppable">
+							<StrictModeDroppable droppableId="droppable_subMenu_1">
 								{(provided, snapshot) => {
 									return <div
 										{...provided.droppableProps}
@@ -495,7 +513,7 @@ const NoteList = (props) => {
 										{provided.placeholder}
 									</div>
 								}}
-							</Droppable>
+							</StrictModeDroppable>
 						</DragDropContext>
 					</SubMenu>
 
