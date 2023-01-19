@@ -57,6 +57,18 @@ export const fetchNotes = async ({ signal }) => {
 
 	const response = await axios.get("/note/findAll", { signal });
 
+	
+	const div1 = document.createElement("div");
+	div1.style.display = "none";
+	const div2 = document.createElement("div");
+	div2.setAttribute("id", "temp-toolbar");
+	const div3 = document.createElement("div");
+	div3.setAttribute("id", "temp-editor-container");
+	div1.appendChild(div2);
+	div1.appendChild(div3);
+	document.querySelector("#MainContainer").appendChild(div1);
+	
+	
 	const options = {
 		modules: {
 			toolbar: '#temp-toolbar'
@@ -79,6 +91,7 @@ export const fetchNotes = async ({ signal }) => {
 			deleteTime: moment(note.deleteTime),
 		}
 	});
+	div1.remove();
 
 	list.sort((a, b) => {
 		return a.number - b.number;

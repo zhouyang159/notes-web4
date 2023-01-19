@@ -78,6 +78,9 @@ const SearchInputContainer = styled.div`
 let autoLogoutTimer = null;
 let lockNoteTimer = null;
 
+let isOnComposition = false;
+
+
 const Main = (props) => {
 	const AskNotePasswordModalRef = useRef();
 	const { logOut } = props;
@@ -202,7 +205,25 @@ const Main = (props) => {
 	const activeColor = profile?.backgroundColor.find((item) => item.active);
 
 
+
+	const handleSearchInputChange = (e) => {
+		if (!isOnComposition) {
+			console.log('onChange fire, filter is string:', e.target.value)
+			setSearchStr(e.target.value);
+		}
+	}
+	const handleComposition = (e) => {
+		if (e.type === "compositionend") {
+			isOnComposition = false;
+			handleSearchInputChange(e);
+		} else {
+			isOnComposition = true;
+		}
+	}
+
+
 	return <MainContainer
+		id="MainContainer"
 		backgroundColor={activeColor?.color}
 		onClick={(e) => {
 			setupNewTimer();
@@ -285,34 +306,36 @@ const Main = (props) => {
 							<Input
 								className="input"
 								placeholder="type to search"
-								value={searchStr}
-								onChange={(e) => {
-									setSearchStr(e.target.value);
-								}}
-								onKeyUp={(e) => {
-									if (e.key === "Escape") {
-										setSearchStr("");
-										setShowSearchInput(false);
-									}
-								}}
+								// value={searchStr}
+								// onChange={(e) => {
+								// 	setSearchStr(e.target.value);
+								// }}
+								onChange={handleSearchInputChange}
+								onCompositionStart={handleComposition}
+								onCompositionUpdate={handleComposition}
+								onCompositionEnd={handleComposition}
 								size="small"
 								style={{
 									borderRadius: 15,
 									float: "left",
 								}}
-								prefix={<SearchOutlined
-									onClick={() => {
-										setShowSearchInput(true);
-									}}
-								/>}
-								suffix={<CloseCircleOutlined style={{ cursor: "pointer" }}
-									onClick={() => {
-										setSearchStr("");
-										setTimeout(() => {
-											setShowSearchInput(false);
-										}, 0);
-									}}
-								/>}
+								prefix={
+									<SearchOutlined
+										onClick={() => {
+											setShowSearchInput(true);
+										}}
+									/>
+								}
+								suffix={
+									<CloseCircleOutlined style={{ cursor: "pointer" }}
+										onClick={() => {
+											setSearchStr("");
+											setTimeout(() => {
+												setShowSearchInput(false);
+											}, 0);
+										}}
+									/>
+								}
 							></Input>
 						</SearchInputContainer>
 					}
@@ -361,10 +384,10 @@ const Main = (props) => {
 				</div>
 			</Body>
 		</HeaderContainer>
-		<div style={{ display: "none" }}>
+		{/* <div id="temp-quill-container" style={{ display: "none" }}>
 			<div id="temp-toolbar"></div>
 			<div id="temp-editor-container"></div>
-		</div>
+		</div> */}
 		{
 			settingPanelOpen && <SettingPanel
 				isModalOpen={settingPanelOpen}
