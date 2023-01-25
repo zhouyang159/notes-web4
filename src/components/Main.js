@@ -154,9 +154,7 @@ const Main = (props) => {
 				content: JSON.stringify(newNote.content),
 			}
 
-			return axios.post("/note", data).then((res) => {
-				message.success("add note");
-			});
+			return axios.post("/note", data);
 		}
 	);
 
@@ -250,6 +248,7 @@ const Main = (props) => {
 						icon={
 							<EditFilled
 								onClick={() => {
+									// begin a new note
 									const newId = uuidv4();
 									const newNote = {
 										id: newId,
@@ -384,10 +383,6 @@ const Main = (props) => {
 				</div>
 			</Body>
 		</HeaderContainer>
-		{/* <div id="temp-quill-container" style={{ display: "none" }}>
-			<div id="temp-toolbar"></div>
-			<div id="temp-editor-container"></div>
-		</div> */}
 		{
 			settingPanelOpen && <SettingPanel
 				isModalOpen={settingPanelOpen}

@@ -119,6 +119,11 @@ const Detail = (props) => {
 			}
 		}
 
+		if (curNote.title === "New Note") {
+			//if user is add a new note, then we focus the editor
+			quill.focus();
+		}
+
 		cb(quill, newTextChangeHandler);
 	}
 
@@ -188,7 +193,6 @@ const Detail = (props) => {
 			handlers: { 'emoji': function () { } }
 		}
 
-
 		let quill = new Quill("#editor-container", {
 			modules: {
 				toolbar: toolbarOptions,
@@ -217,7 +221,8 @@ const Detail = (props) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	return <DetailContainer className="Detail"
+	return <DetailContainer
+		className="Detail"
 		onClick={() => {
 			if (isHightLight) {
 				quill.off("text-change", oldTextChangeHandler);
@@ -236,30 +241,36 @@ const Detail = (props) => {
 					icon={<LockFilled />}
 					title="This note had been lock"
 					subTitle="enter password to unlock this note"
-					extra={<Input type="password" style={{ width: 180 }} size="small"
-						onPressEnter={(e) => {
-							const key = "messageKey";
-							message.loading({ content: "unlocking...", key });
+					extra={
+						<Input
+							type="password"
+							style={{ width: 180 }}
+							size="small"
+							onPressEnter={(e) => {
+								const key = "messageKey";
+								message.loading({ content: "unlocking...", key });
 
-							axios
-								.post(`/user/validateNotePassword/${e.target.value}`)
-								.then((res) => {
-									if (res.status === 0) {
-										setTimeout(() => {
-											message.success({ content: "unlock!", key, duration: 2 });
-											queryClient.setQueryData([PROFILE], (old) => {
-												return {
-													...old,
-													lockNote: false,
-												}
-											});
-										}, 1000);
-									}
-								})
-								.catch(() => {
-									message.destroy(key);
-								});
-						}}></Input>}
+								axios
+									.post(`/user/validateNotePassword/${e.target.value}`)
+									.then((res) => {
+										if (res.status === 0) {
+											setTimeout(() => {
+												message.success({ content: "unlock!", key, duration: 2 });
+												queryClient.setQueryData([PROFILE], (old) => {
+													return {
+														...old,
+														lockNote: false,
+													}
+												});
+											}, 1000);
+										}
+									})
+									.catch(() => {
+										message.destroy(key);
+									});
+							}}
+						></Input>
+					}
 				/>
 			</div>
 		}
