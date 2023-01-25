@@ -119,7 +119,7 @@ const Detail = (props) => {
 			}
 		}
 
-		if (curNote.title === "New Note") {
+		if (curNote?.title === "New Note") {
 			//if user is add a new note, then we focus the editor
 			quill.focus();
 		}
