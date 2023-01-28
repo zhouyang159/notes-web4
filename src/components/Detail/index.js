@@ -11,6 +11,9 @@ import { useMutation, useQuery, useQueryClient } from "react-query";
 import { PROFILE, NOTES } from "../../CONSTANT";
 import { fetchProfile, fetchNoteById } from "../../API";
 import { debounce } from "debounce";
+import * as Emoji from "quill-emoji";
+
+Quill.register("modules/emoji", Emoji);
 
 
 const DetailContainer = styled.div`
@@ -116,6 +119,11 @@ const Detail = (props) => {
 			}
 		}
 
+		if (curNote?.title === "New Note") {
+			//if user is add a new note, then we focus the editor
+			quill.focus();
+		}
+
 		cb(quill, newTextChangeHandler);
 	}
 
@@ -162,28 +170,35 @@ const Detail = (props) => {
 	}, [searchStr]);
 
 	useEffect(() => {
-		let toolbarOptions = [
-			[{ "header": [1, 2, 3, 4, 5, 6, false] }],
-			["bold", "strike"],        // toggled buttons
-			["blockquote", "code-block"],
+		const toolbarOptions = {
+			container: [
+				[{ "header": [1, 2, 3, 4, 5, 6, false] }],
+				["bold", "strike"],        // toggled buttons
+				["blockquote", "code-block"],
 
-			// [{ "header": 1 }, { "header": 2 }],               // custom button values
-			[{ "list": "ordered" }, { "list": "bullet" }],
-			// [{ "script": "sub" }, { "script": "super" }],      // superscript/subscript
-			[{ "indent": "-1" }, { "indent": "+1" }],          // outdent/indent
-			// [{ "direction": "rtl" }],                         // text direction
+				// [{ "header": 1 }, { "header": 2 }],               // custom button values
+				[{ "list": "ordered" }, { "list": "bullet" }],
+				// [{ "script": "sub" }, { "script": "super" }],      // superscript/subscript
+				[{ "indent": "-1" }, { "indent": "+1" }],          // outdent/indent
+				// [{ "direction": "rtl" }],                         // text direction
 
-			// [{ "size": ["small", false, "large", "huge"] }],  // custom dropdown
+				// // [{ "size": ["small", false, "large", "huge"] }],  // custom dropdown
 
-			[{ "color": [] }, { "background": [] }],          // dropdown with defaults from theme
-			// [{ "font": [] }],
-			// [{ "align": [] }],
-			["clean"]                                         // remove formatting button
-		];
+				[{ "color": [] }, { "background": [] }],          // dropdown with defaults from theme
+				// // [{ "font": [] }],
+				// // [{ "align": [] }],
+				// ["clean"]                                         // remove formatting button
+				['emoji'],
+			],
+			handlers: { 'emoji': function () { } }
+		}
 
 		let quill = new Quill("#editor-container", {
 			modules: {
 				toolbar: toolbarOptions,
+				"emoji-toolbar": true,
+				// "emoji-textarea": true,
+				"emoji-shortname": true,
 			},
 			placeholder: "type something here...",
 			theme: "snow",  // or "bubble"，
@@ -206,7 +221,8 @@ const Detail = (props) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	return <DetailContainer className="Detail"
+	return <DetailContainer
+		className="Detail"
 		onClick={() => {
 			if (isHightLight) {
 				quill.off("text-change", oldTextChangeHandler);
@@ -225,30 +241,36 @@ const Detail = (props) => {
 					icon={<LockFilled />}
 					title="This note had been lock"
 					subTitle="enter password to unlock this note"
-					extra={<Input type="password" style={{ width: 180 }} size="small"
-						onPressEnter={(e) => {
-							const key = "messageKey";
-							message.loading({ content: "unlocking...", key });
+					extra={
+						<Input
+							type="password"
+							style={{ width: 180 }}
+							size="small"
+							onPressEnter={(e) => {
+								const key = "messageKey";
+								message.loading({ content: "unlocking...", key });
 
-							axios
-								.post(`/user/validateNotePassword/${e.target.value}`)
-								.then((res) => {
-									if (res.status === 0) {
-										setTimeout(() => {
-											message.success({ content: "unlock!", key, duration: 2 });
-											queryClient.setQueryData([PROFILE], (old) => {
-												return {
-													...old,
-													lockNote: false,
-												}
-											});
-										}, 1000);
-									}
-								})
-								.catch(() => {
-									message.destroy(key);
-								});
-						}}></Input>}
+								axios
+									.post(`/user/validateNotePassword/${e.target.value}`)
+									.then((res) => {
+										if (res.status === 0) {
+											setTimeout(() => {
+												message.success({ content: "unlock!", key, duration: 2 });
+												queryClient.setQueryData([PROFILE], (old) => {
+													return {
+														...old,
+														lockNote: false,
+													}
+												});
+											}, 1000);
+										}
+									})
+									.catch(() => {
+										message.destroy(key);
+									});
+							}}
+						></Input>
+					}
 				/>
 			</div>
 		}
