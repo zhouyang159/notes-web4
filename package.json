@@ -48,8 +48,8 @@
       "last 1 safari version"
     ]
   },
-  "proxy": "http://localhost:8080",
-  "homepage": "/pc",
+  "proxy": "http://localhost:7070",
+  "homepage": "/uat",
   "devDependencies": {
     "webpack-bundle-analyzer": "^4.7.0",
     "webpack-cli": "^4.10.0"
