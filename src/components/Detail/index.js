@@ -52,7 +52,7 @@ const Detail = (props) => {
 	});
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
-	const { isLoading, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+	const { isLoading: isLoadingCurNote, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
 	const patchNoteMutation = useMutation(
 		(newNote) => {
 			const data = {
@@ -70,7 +70,13 @@ const Detail = (props) => {
 
 	const fillQuillContent = (quill, cb = () => { }) => {
 		quill.off("text-change", oldTextChangeHandler);
-		quill.setContents(curNote?.content);
+		if (isLoadingCurNote) {
+			quill.setContents([
+				{ insert: 'Loading...' }
+			]);
+		} else {
+			quill.setContents(curNote?.content);
+		}
 
 		const debouncePatchNote = debounce((newNote) => {
 			patchNoteMutation.mutate(newNote);
@@ -129,7 +135,6 @@ const Detail = (props) => {
 
 	const hightLightSearchStr = (quill, textChangeHandler, searchStr) => {
 		quill.off("text-change", textChangeHandler);
-		quill.setContents(curNote?.content);
 
 		if (!searchStr) {
 			quill.on("text-change", textChangeHandler);
@@ -149,9 +154,6 @@ const Detail = (props) => {
 		if (didMount.current === false || quill === null) {
 			return;
 		}
-		if (isLoading) {
-			return;
-		}
 
 		fillQuillContent(quill, (quill, textChangeHandler) => {
 			hightLightSearchStr(quill, textChangeHandler, searchStr);
@@ -159,13 +161,15 @@ const Detail = (props) => {
 
 		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [activeNoteId, isLoading]);
+	}, [activeNoteId, isLoadingCurNote]);
 
 	useEffect(() => {
 		if (didMount.current === false || quill === null) {
 			return;
 		}
 
+		// 每次 hightLight 文本前，先重置当前note 的内容
+		quill.setContents(curNote?.content);
 		hightLightSearchStr(quill, oldTextChangeHandler, searchStr);
 	}, [searchStr]);
 
