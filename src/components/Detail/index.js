@@ -258,15 +258,13 @@ const Detail = (props) => {
 									.post(`/user/validateNotePassword/${e.target.value}`)
 									.then((res) => {
 										if (res.status === 0) {
-											setTimeout(() => {
-												message.success({ content: "unlock!", key, duration: 2 });
-												queryClient.setQueryData([PROFILE], (old) => {
-													return {
-														...old,
-														lockNote: false,
-													}
-												});
-											}, 1000);
+											message.success({ content: "unlock!", key, duration: 2 });
+											queryClient.setQueryData([PROFILE], (old) => {
+												return {
+													...old,
+													lockNote: false,
+												}
+											});
 										}
 									})
 									.catch(() => {
