@@ -9,9 +9,10 @@ import { PROFILE } from "../../CONSTANT";
 import { fetchProfile } from "../../API";
 import { debounce } from "debounce";
 import styled from "styled-components";
+import preval from 'preval.macro'
 
 const ColorBlock = styled.div`
-display: inline-block;
+      display: inline-block;
       width: 20px;
       height: 20px;
       margin-right: 10px;
@@ -206,6 +207,10 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
 
                   debounceUpdateProfile(newProfile);
                }}></Switch>
+            </div>
+            <div>
+               <p>Version: {process.env.REACT_APP_VERSION}</p>
+               <p>Build Date: {preval`module.exports = new Date().toLocaleString();`}</p>
             </div>
          </Space>
       </Modal>

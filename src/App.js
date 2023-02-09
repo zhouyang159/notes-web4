@@ -8,7 +8,8 @@ import { useQueryClient } from "react-query";
 
 const sessionKey = `${localStorage.getItem("username")}_${new Date().getTime()}`;
 axios.defaults.headers.common["sessionKey"] = sessionKey;
-axios.defaults.baseURL = "/api/uat";
+axios.defaults.baseURL = process.env.REACT_APP_BASEURL;
+
 
 axios.interceptors.response.use(function (response) {
 	// Any status code that lie within the range of 2xx cause this function to trigger
