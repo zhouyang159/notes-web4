@@ -1,7 +1,16 @@
 {
   "name": "notes-web4",
-  "version": "23.02.06.2",
+  "version": "23.02.06.3",
   "private": true,
+  "scripts": {
+    "local": "dotenv -e .env.local -e .env react-scripts start",
+    "uat": "dotenv -e .env.uat -e .env react-scripts start",
+    "build:local": "dotenv -e .env.local -e .env  react-scripts build",
+    "build:uat": "dotenv -e .env.uat -e .env react-scripts build",
+    "build:production": "dotenv -e .env.production -e .env  react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "dependencies": {
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -23,15 +32,6 @@
     "styled-components": "^5.3.3",
     "uuid": "^8.3.2",
     "web-vitals": "^2.1.4"
-  },
-  "scripts": {
-    "local": "dotenv -e .env.local -e .env react-scripts start",
-    "uat": "dotenv -e .env.uat -e .env react-scripts start",
-    "build:local": "dotenv -e .env.local -e .env  react-scripts build",
-    "build:uat": "dotenv -e .env.uat -e .env react-scripts build",
-    "build:production": "dotenv -e .env.production -e .env  react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
