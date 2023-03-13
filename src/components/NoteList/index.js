@@ -224,7 +224,7 @@ const NoteList = (props) => {
 			return axios.put("/note/updateLiveNoteList", data);
 		},
 		{
-			onSuccess: () => {
+			onSettled: () => {
 				queryClient.invalidateQueries([NOTES]);
 			}
 		}
@@ -267,7 +267,7 @@ const NoteList = (props) => {
 			return axios.put("/note", newNote);
 		},
 		{
-			onSuccess: () => {
+			onSettled: () => {
 				queryClient.invalidateQueries([NOTES]);
 				setActiveNoteId(null);
 			}
@@ -275,12 +275,17 @@ const NoteList = (props) => {
 	);
 	const deleteNoteMutation = useMutation(
 		(id) => {
+			queryClient.setQueryData([NOTES], (oldData) => {
+				let newData = oldData.filter((note) => note.id !== id);
+				return newData;
+			});
+
 			return axios.delete(`/note/${id}`).then(() => {
 				message.success("delete success");
 			})
 		},
 		{
-			onSuccess: () => {
+			onSettled: () => {
 				queryClient.invalidateQueries([NOTES], { exact: true });
 			}
 		}
@@ -294,7 +299,7 @@ const NoteList = (props) => {
 			return axios.put("/note", data);
 		},
 		{
-			onSuccess: () => {
+			onSettled: () => {
 				queryClient.invalidateQueries([NOTES]);
 			}
 		}

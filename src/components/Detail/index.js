@@ -53,8 +53,14 @@ const Detail = (props) => {
 	const queryClient = useQueryClient();
 	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
 	const { isLoading: isLoadingCurNote, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
+
 	const patchNoteMutation = useMutation(
 		(newNote) => {
+			newNote = {
+				...newNote,
+				version: newNote.version + 1,
+			}
+
 			const data = {
 				...newNote,
 				content: JSON.stringify(newNote.content),
@@ -63,6 +69,7 @@ const Detail = (props) => {
 		},
 		{
 			onSuccess: () => {
+				queryClient.refetchQueries([NOTES, activeNoteId]);
 				queryClient.refetchQueries([NOTES], { exact: true });
 			}
 		}
@@ -101,6 +108,8 @@ const Detail = (props) => {
 			if (title === "") {
 				title = "New Note";
 			}
+
+			let curNote = queryClient.getQueryData([NOTES, activeNoteId]);
 
 			let newNote = {
 				...curNote,
