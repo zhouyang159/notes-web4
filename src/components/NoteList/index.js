@@ -295,6 +295,7 @@ const NoteList = (props) => {
 			const data = {
 				...newNote,
 				content: JSON.stringify(newNote.content),
+				version: newNote.version + 1,
 			}
 			return axios.put("/note", data);
 		},
