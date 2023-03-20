@@ -56,16 +56,15 @@ const Detail = (props) => {
 
 	const patchNoteMutation = useMutation(
 		(newNote) => {
-			newNote = {
+			const data = {
 				...newNote,
 				content: JSON.stringify(newNote.content),
 				version: newNote.version + 1,
 			}
-			queryClient.setQueryData([NOTES, activeNoteId], newNote);
-			return axios.put("/note", newNote);
+			return axios.put("/note", data);
 		},
 		{
-			onSettled: () => {
+			onSuccess: () => {
 				queryClient.refetchQueries([NOTES, activeNoteId]);
 				queryClient.refetchQueries([NOTES], { exact: true });
 			}
@@ -114,6 +113,7 @@ const Detail = (props) => {
 				content: quill.getContents(),
 				updateTime: moment(),
 			}
+			queryClient.setQueryData([NOTES, activeNoteId], newNote);
 
 			debouncePatchNote(newNote);
 		}
