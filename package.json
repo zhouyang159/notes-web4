@@ -1,6 +1,6 @@
 {
   "name": "notes-web4",
-  "version": "23.02.06.4",
+  "version": "23.03.20.2",
   "private": true,
   "scripts": {
     "local": "dotenv -e .env.local -e .env react-scripts start",
