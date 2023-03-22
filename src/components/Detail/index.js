@@ -38,13 +38,11 @@ const DetailContainer = styled.div`
 	}
 `;
 
+
 const Detail = (props) => {
 	const { activeNoteId, searchStr } = props;
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
-	const [oldTextChangeHandler, setOldTextChangeHandler] = useState(() => {
-		return () => { };
-	});
 	const [isHightLight, setIsHightLight] = useState(false);
 
 	const [username] = useState(() => {
@@ -59,20 +57,26 @@ const Detail = (props) => {
 			const data = {
 				...newNote,
 				content: JSON.stringify(newNote.content),
-				version: newNote.version + 1,
 			}
 			return axios.put("/note", data);
 		},
 		{
-			onSuccess: () => {
-				queryClient.refetchQueries([NOTES, activeNoteId]);
+			onSuccess: (data, variables, context) => {
+				let { data: noteArr, msg, status } = data;
+				let newNote = noteArr.find((note) => note.id === activeNoteId);
+
+				newNote = {
+					...newNote,
+					content: JSON.parse(newNote.content),
+				}
+
+				queryClient.setQueryData([NOTES, activeNoteId], newNote);
 				queryClient.refetchQueries([NOTES], { exact: true });
 			}
 		}
 	);
 
 	const fillQuillContent = (quill, cb = () => { }) => {
-		quill.off("text-change", oldTextChangeHandler);
 		if (isLoadingCurNote) {
 			quill.setContents([
 				{ insert: 'Loading...' }
@@ -81,45 +85,6 @@ const Detail = (props) => {
 			quill.setContents(curNote?.content);
 		}
 
-		const debouncePatchNote = debounce((newNote) => {
-			patchNoteMutation.mutate(newNote);
-		}, 700);
-
-		const newTextChangeHandler = (eventName, ...args) => {
-			let title = "";
-			let text = JSON.stringify(quill.getText(0, 200).trim());
-
-			let titleCharNum = 30;
-			if (text.indexOf("\\n") !== -1 && text.indexOf("\\n") < titleCharNum) {
-				// 回车在30个字符以内
-				title = text.slice(1, text.indexOf("\\n"));
-			} else {
-				// 回车在30个字符以外
-				title = text.slice(1, titleCharNum);
-			}
-			if (title.substring(title.length - 1) === "\"") {
-				title = title.substring(0, title.length - 1)
-			}
-
-			if (title === "") {
-				title = "New Note";
-			}
-
-			let curNote = queryClient.getQueryData([NOTES, activeNoteId]);
-
-			let newNote = {
-				...curNote,
-				title: title,
-				content: quill.getContents(),
-				updateTime: moment(),
-			}
-			queryClient.setQueryData([NOTES, activeNoteId], newNote);
-
-			debouncePatchNote(newNote);
-		}
-		setOldTextChangeHandler(() => newTextChangeHandler);
-
-		quill.on("text-change", newTextChangeHandler);
 		if (curNote?.deleted === 1) {
 			quill.enable(false);
 		} else {
@@ -135,14 +100,11 @@ const Detail = (props) => {
 			quill.focus();
 		}
 
-		cb(quill, newTextChangeHandler);
+		cb();
 	}
 
-	const hightLightSearchStr = (quill, textChangeHandler, searchStr) => {
-		quill.off("text-change", textChangeHandler);
-
+	const hightLightSearchStr = (searchStr) => {
 		if (!searchStr) {
-			quill.on("text-change", textChangeHandler);
 			setIsHightLight(false);
 			return;
 		}
@@ -160,8 +122,8 @@ const Detail = (props) => {
 			return;
 		}
 
-		fillQuillContent(quill, (quill, textChangeHandler) => {
-			hightLightSearchStr(quill, textChangeHandler, searchStr);
+		fillQuillContent(quill, () => {
+			hightLightSearchStr(searchStr);
 		});
 
 		// 只有在切换 activeNoteId 的时候，才跑这个 effect 函数
@@ -175,7 +137,7 @@ const Detail = (props) => {
 
 		// 每次 hightLight 文本前，先重置当前note 的内容
 		quill.setContents(curNote?.content);
-		hightLightSearchStr(quill, oldTextChangeHandler, searchStr);
+		hightLightSearchStr(searchStr);
 	}, [searchStr]);
 
 	useEffect(() => {
@@ -230,16 +192,62 @@ const Detail = (props) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
+
+	const [debounceUpdate] = useState(() => {
+		const debounceFetch = debounce((note) => {
+			patchNoteMutation.mutate(note);
+		}, 500);
+		return debounceFetch;
+	});
+
+	
+
+	useEffect(() => {
+		const textChangeHandler = (delta, oldDelta, source) => {
+			let title = "";
+			let text = JSON.stringify(quill.getText(0, 200).trim());
+
+			let titleCharNum = 30;
+			if (text.indexOf("\\n") !== -1 && text.indexOf("\\n") < titleCharNum) {
+				// 回车在30个字符以内
+				title = text.slice(1, text.indexOf("\\n"));
+			} else {
+				// 回车在30个字符以外
+				title = text.slice(1, titleCharNum);
+			}
+			if (title.substring(title.length - 1) === "\"") {
+				title = title.substring(0, title.length - 1)
+			}
+
+			if (title === "") {
+				title = "New Note";
+			}
+
+			let newNote = {
+				...curNote,
+				title: title,
+				content: quill.getContents(),
+				updateTime: moment(),
+			}
+			queryClient.setQueryData([NOTES, activeNoteId], newNote);
+
+			debounceUpdate(newNote);
+		}
+
+		quill?.on("text-change", textChangeHandler);
+		return () => {
+			quill?.off("text-change", textChangeHandler);
+		}
+	});
+
+
 	return <DetailContainer
 		className="Detail"
 		onClick={() => {
 			if (isHightLight) {
-				quill.off("text-change", oldTextChangeHandler);
-
 				const range = quill.getSelection();
 				quill.setContents(curNote?.content);
 				quill.setSelection(range.index, 0); // position the cursor in mouse click
-				quill.on("text-change", oldTextChangeHandler);
 				setIsHightLight(false);
 			}
 		}}
