@@ -18,6 +18,10 @@ const Label = styled.div`
 	margin-top: 10px;
 `;
 
+const RegisterDiv = styled.div`
+	margin-top: 10px;
+`;
+
 const SignInPanel = (props) => {
 	const { setSignIn } = props;
 
@@ -74,6 +78,9 @@ const SignInPanel = (props) => {
 		<Label>Password</Label>
 		<Input type="password" placeholder="click to insert" value={password} onChange={(e) => setPassword(e.target.value.trim())} onPressEnter={signIn}></Input>
 		<Button loading={loading} style={{ marginTop: "20px" }} block type="primary" onClick={signIn}>sign in</Button>
+		<RegisterDiv>
+			<a href="/register">no account? register</a>
+		</RegisterDiv>
 	</Container>
 }
 

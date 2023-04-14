@@ -23,7 +23,6 @@ const MainContainer = styled.div`
 		}
 		return "white";
 	}};
-	height: 100%;
 `
 
 const HeaderContainer = styled.div`
@@ -249,24 +248,27 @@ const Main = (props) => {
 							<EditFilled
 								onClick={() => {
 									// begin a new note
-									const newId = uuidv4();
-									const newNote = {
-										id: newId,
-										title: "New Note",
-										content: "",
-										number: 0,
-										createTime: moment(),
-										updateTime: moment(),
-										username: localStorage.getItem("username"),
-										deleted: 0,
-										active: false,
-									}
-
-									addNoteMutation.mutate(newNote, {
-										onSuccess: () => {
-											setActiveNoteId(newId);
-											queryClient.refetchQueries([NOTES]);
+									axios.get("/snowflake/id")
+									.then((res) => {
+										const newId = res.data;
+										const newNote = {
+											id: newId,
+											title: "New Note",
+											content: "",
+											number: 0,
+											createTime: moment(),
+											updateTime: moment(),
+											username: localStorage.getItem("username"),
+											deleted: 0,
+											active: false,
 										}
+	
+										addNoteMutation.mutate(newNote, {
+											onSuccess: () => {
+												setActiveNoteId(newId);
+												queryClient.refetchQueries([NOTES]);
+											}
+										});
 									});
 								}}
 							></EditFilled>
