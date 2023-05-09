@@ -4,7 +4,6 @@ import axios from "axios";
 import { Button, message, Dropdown, Menu, Input } from "antd";
 import { SyncOutlined, EllipsisOutlined, LockFilled, EditFilled, SearchOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import styled from "styled-components";
-import { v4 as uuidv4 } from "uuid";
 import moment from "moment";
 import NoteList from "./NoteList/index";
 import Detail from "./Detail/index";
@@ -17,6 +16,7 @@ const ICON_MARGIN_RIGHT = 10;
 
 
 const MainContainer = styled.div`
+	height: 100%;
 	background: ${(props) => {
 		if (props.backgroundColor) {
 			return props.backgroundColor;
