@@ -62,6 +62,7 @@ const Detail = (props) => {
 		},
 		{
 			onSuccess: (data, variables, context) => {
+				// eslint-disable-next-line
 				let { data: noteArr, msg, status } = data;
 				let newNote = noteArr.find((note) => note.id === activeNoteId);
 

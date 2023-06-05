@@ -1,10 +1,10 @@
 {
   "name": "notes-web4",
-  "version": "23.02.06.7",
+  "version": "23.02.06.9",
   "private": true,
   "scripts": {
-    "production": "dotenv -e .env.production -e .env react-scripts start",
-    "build:production": "dotenv -e .env.production -e .env  react-scripts build",
+    "dev": "dotenv -e .env.production -e .env react-scripts start",
+    "build": "dotenv -e .env.production -e .env  react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

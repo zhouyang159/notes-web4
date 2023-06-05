@@ -320,8 +320,7 @@ const NoteList = (props) => {
 				className="item"
 				onClick={async () => {
 					const moveToTrash = () => {
-						const divId = activeNote.id.substring(0, activeNote.id.indexOf("-"));
-						const element = document.getElementById(divId);
+						const element = document.getElementById(activeNote.id);
 						element.style.background = "red";
 						setTimeout(() => {
 							element.style.transition = "all 0.4s";
@@ -438,7 +437,7 @@ const NoteList = (props) => {
 		{
 			searchStr === "" && <div className="NoteList">
 				<Menu
-					defaultOpenKeys={["sub1", "sub2"]}
+					defaultOpenKeys={["sub1"]}
 					mode="inline"
 					selectedKeys={[]}
 				>
@@ -470,7 +469,7 @@ const NoteList = (props) => {
 											return <Draggable key={note.id} draggableId={note.id} index={index}>
 												{(provided, snapshot) => (
 													<DraggableItem
-														id={note.id.substring(0, note.id.indexOf("-"))}
+														id={note.id}
 														ref={provided.innerRef}
 														{...provided.draggableProps}
 														{...provided.dragHandleProps}

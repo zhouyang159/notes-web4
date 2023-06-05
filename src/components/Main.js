@@ -76,8 +76,10 @@ const SearchInputContainer = styled.div`
 
 let autoLogoutTimer = null;
 let lockNoteTimer = null;
+let countDownTimer = null;
 
 let isOnComposition = false;
+
 
 
 const Main = (props) => {
@@ -113,18 +115,30 @@ const Main = (props) => {
 		}, 10 * 60 * 1000);
 	}
 
-	const setupNewTimer = () => {
-		if (profile?.hasNotePassword) {
+	const refreshTimer = () => {
+		if (profile?.hasNotePassword && profile?.lockNote === false) {
 			// 5 min timeout to lock secret note
+
+			clearInterval(countDownTimer);
+			let totalSecond = 7;
+			countDownTimer = setInterval(() => {
+				console.warn(`${totalSecond} second left`);
+				totalSecond--;
+			}, 1000);
+
+
 			clearTimeout(lockNoteTimer);
 			lockNoteTimer = setTimeout(() => {
+				clearInterval(countDownTimer);
+
+				console.warn("lock note!");
 				queryClient.setQueryData([PROFILE], (old) => {
 					return {
 						...old,
 						lockNote: true,
 					}
 				});
-			}, 5 * 60 * 1000);
+			}, 1000 * totalSecond);
 		}
 
 		if (profile?.autoLogout !== -1) {
@@ -132,6 +146,13 @@ const Main = (props) => {
 			setupAutoLogoutTimer();
 		}
 	}
+
+	useEffect(() => {
+		if (profile?.lockNote === false) {
+			refreshTimer();
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [profile?.lockNote]);
 
 	useEffect(() => {
 		if (profile?.autoLogout === -1) {
@@ -142,6 +163,7 @@ const Main = (props) => {
 
 		return () => {
 			clearTimeout(autoLogoutTimer);
+			clearTimeout(lockNoteTimer);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [profile?.autoLogout]);
@@ -179,7 +201,7 @@ const Main = (props) => {
 		});
 	}
 
-	const disabledNewBtn = useCallback(() => {
+	const isDisabledNewBtn = useCallback(() => {
 		if (isLoading) {
 			return true;
 		}
@@ -223,10 +245,10 @@ const Main = (props) => {
 		id="MainContainer"
 		backgroundColor={activeColor?.color}
 		onClick={(e) => {
-			setupNewTimer();
+			refreshTimer();
 		}}
 		onKeyUp={() => {
-			setupNewTimer();
+			refreshTimer();
 		}}
 	>
 		<HeaderContainer>
@@ -242,34 +264,34 @@ const Main = (props) => {
 				<div className="buttons_container">
 					<span style={{ marginRight: ICON_MARGIN_RIGHT }}>{profile?.nickname || profile?.username}</span>
 					<Button
-						disabled={disabledNewBtn()}
+						disabled={isDisabledNewBtn()}
 						size="small" shape="circle" style={{ marginRight: ICON_MARGIN_RIGHT }}
 						icon={
 							<EditFilled
 								onClick={() => {
 									// begin a new note
 									axios.get("/snowflake/id")
-									.then((res) => {
-										const newId = res.data;
-										const newNote = {
-											id: newId,
-											title: "New Note",
-											content: "",
-											number: 0,
-											createTime: moment(),
-											updateTime: moment(),
-											username: localStorage.getItem("username"),
-											deleted: 0,
-											active: false,
-										}
-	
-										addNoteMutation.mutate(newNote, {
-											onSuccess: () => {
-												setActiveNoteId(newId);
-												queryClient.refetchQueries([NOTES]);
+										.then((res) => {
+											const newId = res.data;
+											const newNote = {
+												id: newId,
+												title: "New Note",
+												content: "",
+												number: 0,
+												createTime: moment(),
+												updateTime: moment(),
+												username: localStorage.getItem("username"),
+												deleted: 0,
+												active: false,
 											}
+
+											addNoteMutation.mutate(newNote, {
+												onSuccess: () => {
+													setActiveNoteId(newId);
+													queryClient.refetchQueries([NOTES]);
+												}
+											});
 										});
-									});
 								}}
 							></EditFilled>
 						}
