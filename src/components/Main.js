@@ -151,7 +151,7 @@ const Main = (props) => {
 		if (profile?.lockNote === false) {
 			refreshTimer();
 		}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [profile?.lockNote]);
 
 	useEffect(() => {
@@ -307,7 +307,11 @@ const Main = (props) => {
 									}}
 								></LockFilled> :
 								<span class="iconfont icon-unlocked"
-									onClick={() => {
+									onClick={(e) => {
+										e.stopPropagation();
+										clearInterval(countDownTimer);
+										clearTimeout(lockNoteTimer);
+
 										queryClient.setQueryData([PROFILE], (old) => {
 											return {
 												...old,
