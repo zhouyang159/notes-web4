@@ -35,7 +35,7 @@ const SettingPanel = ({ isModalOpen = false, closeModal = () => { } }) => {
 
    const [username] = useState(() => localStorage.getItem("username"));
    const queryClient = useQueryClient();
-   const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+   const { data: profile } = useQuery([PROFILE], () => fetchProfile(username, queryClient));
    const profileMutation = useMutation(
       (newProfile) => {
          return axios.put(`/user/profile`, newProfile);

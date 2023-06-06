@@ -1,14 +1,15 @@
 import axios from "axios";
 import moment from "moment";
 import Quill from "quill";
+import { PROFILE } from "./CONSTANT.js";
 
-export const fetchProfile = async (username) => {
+
+export const fetchProfile = async (username, queryClient) => {
 	console.log("Fetch profile");
 	const response = await axios.get(`/user/${username}/profile`);
 
-
-	let profile = response.data;
-	if (!profile?.backgroundColor) {
+	let newProfile = response.data;
+	if (!newProfile?.backgroundColor) {
 		const initColors = [
 			{
 				color: "skyblue",
@@ -35,21 +36,32 @@ export const fetchProfile = async (username) => {
 				active: false,
 			},
 		]
-		profile.backgroundColor = initColors;
+		newProfile.backgroundColor = initColors;
 	} else {
-		profile = {
-			...profile,
-			backgroundColor: JSON.parse(profile?.backgroundColor),
+		newProfile = {
+			...newProfile,
+			backgroundColor: JSON.parse(newProfile?.backgroundColor),
 		}
 	}
 
-	if (profile.hasNotePassword) {
-		profile = {
-			...profile,
-			lockNote: true,
+	if (newProfile.hasNotePassword) {
+		const preProfile = queryClient.getQueryData([PROFILE]);
+
+		if (preProfile === undefined) {
+			newProfile = {
+				...newProfile,
+				lockNote: true,
+			}
+		} else {
+			// 如果不是第一次请求profile数据，则保留lockNote的前一个状态
+			newProfile = {
+				...newProfile,
+				lockNote: preProfile.lockNote,
+			}
 		}
 	}
-	return profile;
+
+	return newProfile;
 }
 
 export const fetchNotes = async ({ signal }) => {
@@ -57,7 +69,7 @@ export const fetchNotes = async ({ signal }) => {
 
 	const response = await axios.get("/note/findAll", { signal });
 
-	
+
 	const div1 = document.createElement("div");
 	div1.style.display = "none";
 	const div2 = document.createElement("div");
@@ -67,8 +79,8 @@ export const fetchNotes = async ({ signal }) => {
 	div1.appendChild(div2);
 	div1.appendChild(div3);
 	document.querySelector("#MainContainer").appendChild(div1);
-	
-	
+
+
 	const options = {
 		modules: {
 			toolbar: '#temp-toolbar'

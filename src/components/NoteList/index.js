@@ -196,7 +196,7 @@ const NoteList = (props) => {
 
 	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const username = useState(() => localStorage.getItem("username"))[0];
-	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username, queryClient));
 	const { data: noteList = [] } = useQuery([NOTES], fetchNotes);
 	const liveNoteList = noteList.filter((item) => item.deleted === 0);
 	const trashNoteList = noteList.filter((item) => item.deleted === 1);

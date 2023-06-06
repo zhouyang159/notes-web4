@@ -103,7 +103,7 @@ const Main = (props) => {
 	const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
 	const queryClient = useQueryClient();
-	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username, queryClient));
 
 	const [showSearchInput, setShowSearchInput] = useState(false);
 	const [searchStr, setSearchStr] = useState("");
@@ -120,7 +120,7 @@ const Main = (props) => {
 			// 5 min timeout to lock secret note
 
 			clearInterval(countDownTimer);
-			let totalSecond = 7;
+			let totalSecond = 5 * 60;
 			countDownTimer = setInterval(() => {
 				console.warn(`${totalSecond} second left`);
 				totalSecond--;

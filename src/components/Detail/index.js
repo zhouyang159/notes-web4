@@ -49,7 +49,7 @@ const Detail = (props) => {
 		return localStorage.getItem("username");
 	});
 	const queryClient = useQueryClient();
-	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username));
+	const { data: profile } = useQuery([PROFILE], () => fetchProfile(username, queryClient));
 	const { isLoading: isLoadingCurNote, data: curNote } = useQuery([NOTES, activeNoteId], () => fetchNoteById(activeNoteId));
 
 	const patchNoteMutation = useMutation(
@@ -258,7 +258,7 @@ const Detail = (props) => {
 				<Result
 					icon={<LockFilled />}
 					title="This note had been lock"
-					subTitle="enter password to unlock this note"
+					subTitle="enter note password to unlock this note"
 					extra={
 						<Input
 							type="password"
