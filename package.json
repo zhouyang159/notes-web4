@@ -1,10 +1,10 @@
 {
   "name": "notes-web4",
-  "version": "23.06.06.1",
+  "version": "23.08.23.1",
   "private": true,
   "scripts": {
-    "dev": "dotenv -e .env.production -e .env react-scripts start",
-    "build": "dotenv -e .env.production -e .env  react-scripts build",
+    "dev": "react-scripts start",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
@@ -15,6 +15,7 @@
     "antd": "^4.18.2",
     "axios": "^0.24.0",
     "debounce": "^1.2.1",
+    "dotenv": "^16.3.1",
     "md5": "^2.3.0",
     "moment": "^2.29.1",
     "preval.macro": "^5.0.0",
@@ -50,7 +51,6 @@
   "proxy": "http://localhost:80",
   "homepage": "/pc",
   "devDependencies": {
-    "dotenv": "^16.0.3",
     "webpack-bundle-analyzer": "^4.7.0",
     "webpack-cli": "^4.10.0"
   }
