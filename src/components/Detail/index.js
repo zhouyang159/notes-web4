@@ -5,7 +5,7 @@ import styled from "styled-components";
 import Quill from "quill";
 import "quill/dist/quill.snow.css"
 import moment from "moment";
-import { Input, message, } from "antd";
+import { Input, message, Button } from "antd";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { PROFILE, NOTES } from "../../CONSTANT";
@@ -36,6 +36,12 @@ const DetailContainer = styled.div`
 	.ql-container{
 		height: 93%;
 	}
+`;
+
+const SaveBtn = styled(Button)`
+	position: absolute;
+	right: 10px;
+	bottom: 10px;
 `;
 
 
@@ -193,16 +199,13 @@ const Detail = (props) => {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-
 	const [debounceUpdate] = useState(() => {
-		const debounceFetch = debounce((note) => {
+		const debounceUpdate = debounce((note) => {
 			patchNoteMutation.mutate(note);
 		}, 500);
-		return debounceFetch;
+		return debounceUpdate;
 	});
-
 	
-
 	useEffect(() => {
 		const textChangeHandler = (delta, oldDelta, source) => {
 			let title = "";
@@ -232,7 +235,7 @@ const Detail = (props) => {
 			}
 			queryClient.setQueryData([NOTES, activeNoteId], newNote);
 
-			debounceUpdate(newNote);
+			// debounceUpdate(newNote);
 		}
 
 		quill?.on("text-change", textChangeHandler);
@@ -240,7 +243,6 @@ const Detail = (props) => {
 			quill?.off("text-change", textChangeHandler);
 		}
 	});
-
 
 	return <DetailContainer
 		className="Detail"
@@ -291,6 +293,19 @@ const Detail = (props) => {
 			</div>
 		}
 		<div id="editor-container"></div>
+		<SaveBtn size="small" onClick={() => {
+			const key = "messageKey";
+			message.loading({ content: "saving...", key });
+
+			const newNote = {
+				...curNote,
+				content: quill.getContents(),
+				updateTime: moment(),
+			}
+
+			debounceUpdate(newNote);
+			message.success({ content: "saved!", key, duration: 2 });
+		}}>save</SaveBtn>
 	</DetailContainer>
 };
 
