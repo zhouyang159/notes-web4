@@ -40,8 +40,8 @@ const DetailContainer = styled.div`
 
 const SaveBtn = styled(Button)`
 	position: absolute;
+	top: 10px;
 	right: 10px;
-	bottom: 10px;
 `;
 
 
@@ -50,6 +50,7 @@ const Detail = (props) => {
 	const didMount = useRef(false);
 	const [quill, setQuill] = useState(null);
 	const [isHightLight, setIsHightLight] = useState(false);
+	const [isChange, setIsChange] = useState(false);
 
 	const [username] = useState(() => {
 		return localStorage.getItem("username");
@@ -205,9 +206,10 @@ const Detail = (props) => {
 		}, 500);
 		return debounceUpdate;
 	});
-	
+
 	useEffect(() => {
 		const textChangeHandler = (delta, oldDelta, source) => {
+			console.log('textChangeHandler: ', delta);
 			let title = "";
 			let text = JSON.stringify(quill.getText(0, 200).trim());
 
@@ -234,6 +236,8 @@ const Detail = (props) => {
 				updateTime: moment(),
 			}
 			queryClient.setQueryData([NOTES, activeNoteId], newNote);
+
+			setIsChange(true);
 
 			// debounceUpdate(newNote);
 		}
@@ -293,19 +297,24 @@ const Detail = (props) => {
 			</div>
 		}
 		<div id="editor-container"></div>
-		<SaveBtn size="small" onClick={() => {
-			const key = "messageKey";
-			message.loading({ content: "saving...", key });
+		<SaveBtn
+			size="small"
+			disabled={!isChange}
+			onClick={() => {
+				const key = "messageKey";
+				message.loading({ content: "saving...", key });
 
-			const newNote = {
-				...curNote,
-				content: quill.getContents(),
-				updateTime: moment(),
-			}
+				const newNote = {
+					...curNote,
+					content: quill.getContents(),
+					updateTime: moment(),
+				}
 
-			debounceUpdate(newNote);
-			message.success({ content: "saved!", key, duration: 2 });
-		}}>save</SaveBtn>
+				debounceUpdate(newNote);
+				message.success({ content: "saved!", key, duration: 2 });
+				setIsChange(false);
+			}}
+		>save</SaveBtn>
 	</DetailContainer>
 };
 

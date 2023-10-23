@@ -1,6 +1,6 @@
 {
   "name": "notes-web4",
-  "version": "23.10.19.1",
+  "version": "23.10.19.2",
   "private": true,
   "scripts": {
     "dev": "react-scripts start",
