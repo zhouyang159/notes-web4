@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Result } from "antd";
 import { LockFilled } from "@ant-design/icons";
 import styled from "styled-components";
 import Quill from "quill";
-import "quill/dist/quill.snow.css"
+import "quill/dist/quill.snow.css";
 import moment from "moment";
 import { Input, message, Button } from "antd";
 import axios from "axios";
@@ -48,6 +48,7 @@ const SaveBtn = styled(Button)`
 const Detail = (props) => {
 	const { activeNoteId, searchStr } = props;
 	const didMount = useRef(false);
+	const quillRef = useRef(null);
 	const [quill, setQuill] = useState(null);
 	const [isHightLight, setIsHightLight] = useState(false);
 	const [isChange, setIsChange] = useState(false);
@@ -124,6 +125,41 @@ const Detail = (props) => {
 			quill.formatText(i, searchStr.length, 'background', '#ffda90');
 		}
 	}
+
+	const handleSaveNote =  useCallback(() => {
+		const key = "messageKey";
+		message.loading({ content: "saving...", key });
+
+		const newNote = {
+			...curNote,
+			content: quill.getContents(),
+			updateTime: moment(),
+		}
+
+		debounceUpdate(newNote);
+		message.success({ content: "saved!", key, duration: 2 });
+		setIsChange(false);
+	}, [curNote, quill]);
+
+	useEffect(() => {
+		const handleKeyDown = (e) => {
+			if ((e.ctrlKey && e.key === 's') || (e.metaKey && e.key === 's')) {
+				e.preventDefault();
+				handleSaveNote();
+			}
+		};
+	
+		const quillContainer = quillRef.current;
+		if (quillContainer) {
+			quillContainer.addEventListener('keydown', handleKeyDown);
+		}
+	
+		return () => {
+			if (quillContainer) {
+				quillContainer.removeEventListener('keydown', handleKeyDown);
+			}
+		};
+	}, [handleSaveNote]);
 
 	useEffect(() => {
 		if (didMount.current === false || quill === null) {
@@ -209,7 +245,6 @@ const Detail = (props) => {
 
 	useEffect(() => {
 		const textChangeHandler = (delta, oldDelta, source) => {
-			console.log('textChangeHandler: ', delta);
 			let title = "";
 			let text = JSON.stringify(quill.getText(0, 200).trim());
 
@@ -296,24 +331,11 @@ const Detail = (props) => {
 				/>
 			</div>
 		}
-		<div id="editor-container"></div>
+		<div id="editor-container" ref={quillRef}></div>
 		<SaveBtn
 			size="small"
 			disabled={!isChange}
-			onClick={() => {
-				const key = "messageKey";
-				message.loading({ content: "saving...", key });
-
-				const newNote = {
-					...curNote,
-					content: quill.getContents(),
-					updateTime: moment(),
-				}
-
-				debounceUpdate(newNote);
-				message.success({ content: "saved!", key, duration: 2 });
-				setIsChange(false);
-			}}
+			onClick={handleSaveNote}
 		>save</SaveBtn>
 	</DetailContainer>
 };
