@@ -518,7 +518,7 @@ const NoteList = (props) => {
 														}}
 													>
 														<div className="title">{note.title}</div>
-														<div className="date">{note.createTime.format("yyyy/MM/DD HH:mm:ss")}</div>
+														<div className="date">{note.updateTime.format("yyyy/MM/DD HH:mm:ss")}</div>
 														<div className="lock_icon">{getLockIcon(note, profile)}</div>
 													</DraggableItem>
 												)}
