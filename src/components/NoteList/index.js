@@ -192,7 +192,12 @@ const SearchResultList = ({
 }
 
 const NoteList = (props) => {
-	const { activeNoteId, setActiveNoteId, validateNotePassword, searchStr } = props;
+	const { activeNoteId,
+		setActiveNoteId,
+		validateNotePassword,
+		searchStr,
+		setIsLoading,
+	} = props;
 
 	const [isSetNotePwModalOpen, setIsSetNotePwModalOpen] = useState(false);
 	const username = useState(() => localStorage.getItem("username"))[0];
@@ -223,11 +228,15 @@ const NoteList = (props) => {
 
 			return axios.put("/note/updateLiveNoteList", data);
 		},
-		{
-			onSettled: () => {
-				queryClient.invalidateQueries([NOTES]);
-			}
-		}
+        {
+            onMutate: () => {
+                setIsLoading(true);
+            },
+            onSettled: () => {
+                setIsLoading(false);
+                queryClient.invalidateQueries([NOTES]);
+            }
+        }
 	);
 	const moveToTrashMutation = useMutation(
 		(id) => {

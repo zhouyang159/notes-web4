@@ -69,7 +69,12 @@ const Detail = (props) => {
 			return axios.put("/note", data);
 		},
 		{
+			onMutate: () => {
+			},
 			onSuccess: (data, variables, context) => {
+				message.destroy();
+				message.success("saved!", 2);
+
 				// eslint-disable-next-line
 				let { data: noteArr, msg, status } = data;
 				let newNote = noteArr.find((note) => note.id === activeNoteId);
@@ -81,7 +86,11 @@ const Detail = (props) => {
 
 				queryClient.setQueryData([NOTES, activeNoteId], newNote);
 				queryClient.refetchQueries([NOTES], { exact: true });
-			}
+			},
+			onError: (error, variables, context) => {
+				message.error("save failed!");
+				console.error(error);
+			},
 		}
 	);
 
@@ -127,17 +136,15 @@ const Detail = (props) => {
 	}
 
 	const handleSaveNote =  useCallback(() => {
-		const key = "messageKey";
-		message.loading({ content: "saving...", key });
-
 		const newNote = {
 			...curNote,
 			content: quill.getContents(),
 			updateTime: moment(),
 		}
 
+		message.loading("saving...", 0);
+
 		debounceUpdate(newNote);
-		message.success({ content: "saved!", key, duration: 2 });
 		setIsChange(false);
 	}, [curNote, quill]);
 
@@ -148,12 +155,12 @@ const Detail = (props) => {
 				handleSaveNote();
 			}
 		};
-	
+
 		const quillContainer = quillRef.current;
 		if (quillContainer) {
 			quillContainer.addEventListener('keydown', handleKeyDown);
 		}
-	
+
 		return () => {
 			if (quillContainer) {
 				quillContainer.removeEventListener('keydown', handleKeyDown);

@@ -56,7 +56,6 @@ const NoteListContainer = styled.div`
 
 const SearchInputContainer = styled.div`
 	display: inline-block;
-	height: 30px;
 	-webkit-transition: all 1s;
 	transition: all 0.4s;
 	overflow-x: hidden;
@@ -397,6 +396,7 @@ const Main = (props) => {
 						setActiveNoteId={setActiveNoteId}
 						validateNotePassword={validateNotePassword}
 						searchStr={searchStr}
+						setIsLoading={setIsLoading}
 					></NoteList>
 				</NoteListContainer>
 				<div>
