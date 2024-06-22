@@ -300,6 +300,11 @@ const Detail = (props) => {
         }
     });
 
+    const passwordInputRef = useRef();
+    useEffect(() => {
+        passwordInputRef.current?.focus();
+    }, [curNote]);
+
     return <DetailContainer
         className="Detail"
         onClick={() => {
@@ -321,9 +326,11 @@ const Detail = (props) => {
                     subTitle="enter note password to unlock this note"
                     extra={
                         <Input
+                            ref={passwordInputRef}
                             type="password"
                             style={{width: 180}}
                             size="small"
+                            autoComplete="new-password"
                             onPressEnter={(e) => {
                                 const key = "messageKey";
                                 message.loading({content: "unlocking...", key});
