@@ -47,7 +47,7 @@ const AskNotePasswordModal = (props, ref) => {
          name="basic"
       >
          <Form.Item
-            label="Note Password"
+            label="Password for unlock:"
          >
             <Input.Password ref={inputRef} value={password} onChange={(e) => setPassword(e.target.value)} onPressEnter={submit} />
          </Form.Item>
