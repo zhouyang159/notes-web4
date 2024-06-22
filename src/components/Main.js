@@ -386,10 +386,12 @@ const Main = (props) => {
 					</Dropdown>
 				</div>
 			</H1>
-			<Body onClick={() => {
-				document.getElementById("Menu").style.display = "none";
-				document.getElementById("Menu2").style.display = "none";
-			}}>
+			<Body
+				onClick={() => {
+					document.getElementById("Menu").style.display = "none";
+					document.getElementById("Menu2").style.display = "none";
+				}}
+			>
 				<NoteListContainer>
 					<NoteList
 						activeNoteId={activeNoteId}

@@ -192,7 +192,8 @@ const SearchResultList = ({
 }
 
 const NoteList = (props) => {
-	const { activeNoteId,
+	const {
+		activeNoteId,
 		setActiveNoteId,
 		validateNotePassword,
 		searchStr,
