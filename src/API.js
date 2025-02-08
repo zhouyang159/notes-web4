@@ -1,7 +1,8 @@
 import axios from "axios";
 import moment from "moment";
 import Quill from "quill";
-import { PROFILE } from "./CONSTANT.js";
+import {PROFILE} from "./CONSTANT.js";
+import {decryptText} from "./util";
 
 
 export const fetchProfile = async (username, queryClient) => {
@@ -91,7 +92,10 @@ export const fetchNotes = async ({ signal }) => {
 	};
 	let quill = new Quill("#temp-editor-container", options);
 
-	let list = response.data.map((note) => {
+	const decryptStr =  decryptText(response.data);
+	let noteList = JSON.parse(decryptStr);
+
+	noteList = noteList.map((note) => {
 		quill.setContents(JSON.parse(note.content));
 
 		return {
@@ -103,22 +107,28 @@ export const fetchNotes = async ({ signal }) => {
 			deleteTime: moment(note.deleteTime),
 		}
 	});
+
 	div1.remove();
 
-	list.sort((a, b) => {
+	noteList.sort((a, b) => {
 		return a.number - b.number;
 	});
 
-	return list;
+	return noteList;
 }
 
 export const fetchNoteById = async (id) => {
 	console.log("Fetch note by id: " + id);
 
-	const res = await axios.get(`/note/${id}`);
-	const data = {
+	let res = await axios.get(`/note/${id}`);
+
+	let decryptStr = decryptText(res.data);
+	res.data = JSON.parse(decryptStr);
+
+	let note = {
 		...res.data,
 		content: JSON.parse(res.data.content),
-	}
-	return data;
+	};
+
+	return note;
 }

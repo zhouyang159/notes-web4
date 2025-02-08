@@ -10,6 +10,7 @@ import moment from "moment";
 import SetNotePwModal from "../modals/SetNotePwModal";
 import {NOTES, NEW_NOTE, PROFILE} from "../../CONSTANT";
 import {fetchProfile, fetchNotes, fetchNoteById} from "../../API";
+import {encryptText} from "../../util";
 
 
 const StrictModeDroppable = ({children, ...props}) => {
@@ -225,7 +226,7 @@ const NoteList = (props) => {
     const queryClient = useQueryClient();
     const reorderMutation = useMutation(
         (newList) => {
-            const data = newList.map(note => {
+            const noteList = newList.map(note => {
                 return {
                     ...note,
                     content: JSON.stringify(note.content),
@@ -237,7 +238,12 @@ const NoteList = (props) => {
                 return [...newList, ...trashNoteList]
             });
 
-            return axios.put("/note/updateLiveNoteList", data);
+            const encryptedText = encryptText(JSON.stringify(noteList))
+            return axios.put("/note/updateLiveNoteList", { encryptedText }, {
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
         },
         {
             onMutate: () => {
@@ -284,7 +290,13 @@ const NoteList = (props) => {
                 deleted: 0,
                 updateTime: moment(),
             }
-            return axios.put("/note", newNote);
+
+            const encryptedText = encryptText(JSON.stringify(newNote));
+            return axios.put("/note", { encryptedText }, {
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
         },
         {
             onSettled: () => {
@@ -317,7 +329,13 @@ const NoteList = (props) => {
                 content: JSON.stringify(newNote.content),
                 version: newNote.version + 1,
             }
-            return axios.put("/note", data);
+
+            const encryptedText = encryptText(JSON.stringify(data));
+            return axios.put("/note", { encryptedText }, {
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
         },
         {
             onSettled: () => {
@@ -433,8 +451,8 @@ const NoteList = (props) => {
                     Modal.confirm({
                         icon: <ExclamationCircleOutlined/>,
                         content: <ConfirmContent>
-                            <div className="title">Are you sure you want to delete the note permanently?</div>
-                            <div className="subTitle">You cannot undo this action.</div>
+                            <div className="title">Are you sure you want to delete the note?</div>
+                            <div className="subTitle">You cannot undo this.</div>
                         </ConfirmContent>,
                         centered: true,
                         okText: "Delete",
