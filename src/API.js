@@ -65,10 +65,11 @@ export const fetchProfile = async (username, queryClient) => {
 	return newProfile;
 }
 
-export const fetchNotes = async ({ signal }) => {
+export const fetchNotes = async (signal) => {
 	console.log("Fetch all notes");
 
 	const response = await axios.get("/note/findAll", { signal });
+
 
 
 	const div1 = document.createElement("div");
@@ -105,6 +106,7 @@ export const fetchNotes = async ({ signal }) => {
 			createTime: moment(note.createTime),
 			updateTime: moment(note.updateTime),
 			deleteTime: moment(note.deleteTime),
+			modify: false,
 		}
 	});
 

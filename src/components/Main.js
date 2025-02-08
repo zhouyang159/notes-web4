@@ -105,11 +105,11 @@ const Main = (props) => {
       }, 1000);
     }
   }
-  const {data: noteList = []} = useQuery([NOTES], fetchNotes);
+  const queryClient = useQueryClient();
+  const {data: noteList = []} = useQuery([NOTES], ({ signal }) => fetchNotes(signal));
   const [activeNoteId, setActiveNoteId] = useState(null);
   const [settingPanelOpen, setSettingPanelOpen] = useState(false);
 
-  const queryClient = useQueryClient();
   const {data: profile} = useQuery([PROFILE], () => fetchProfile(username, queryClient));
 
   const [showSearchInput, setShowSearchInput] = useState(false);
@@ -294,9 +294,9 @@ const Main = (props) => {
                   // begin a new note
                   axios.get("/snowflake/id")
                     .then((res) => {
-                      const newId = res.data;
+                      const newNoteId = res.data;
                       const newNote = {
-                        id: newId,
+                        id: newNoteId,
                         title: "New Note",
                         content: "",
                         number: 0,
@@ -309,7 +309,7 @@ const Main = (props) => {
 
                       addNoteMutation.mutate(newNote, {
                         onSuccess: () => {
-                          setActiveNoteId(newId);
+                          setActiveNoteId(newNoteId);
                           queryClient.refetchQueries([NOTES]);
 
                           message.destroy(key);
@@ -321,7 +321,6 @@ const Main = (props) => {
                         }
                       });
                     })
-
                 }}
               ></EditFilled>
             }

@@ -59,7 +59,6 @@ const Detail = (props) => {
   const quillRef = useRef(null);
   const [quill, setQuill] = useState(null);
   const [isHighLight, setIsHighLight] = useState(false);
-  const [isChange, setIsChange] = useState(false);
 
   const [username] = useState(() => {
     return localStorage.getItem("username");
@@ -104,8 +103,19 @@ const Detail = (props) => {
           content: JSON.parse(newNote.content),
         }
 
+        let noteList = queryClient.getQueryData([NOTES]);
+        noteList = noteList.map(note => {
+          if (note.id === activeNoteId) {
+            return {
+              ...note,
+              modify: false,
+            }
+          }
+          return note;
+        });
+        queryClient.setQueryData([NOTES], noteList);
+
         queryClient.setQueryData([NOTES, activeNoteId], newNote);
-        queryClient.refetchQueries([NOTES], {exact: true});
       },
       onError: (error, variables, context) => {
         message.error("save failed!");
@@ -166,7 +176,6 @@ const Detail = (props) => {
     message.loading("saving...", 0);
 
     debounceUpdate(newNote);
-    setIsChange(false);
   }, [curNote, quill]);
 
   const [notePassword, setNotePassword] = useState('');
@@ -328,10 +337,27 @@ const Detail = (props) => {
         title: title,
         content: quill.getContents(),
         updateTime: moment(),
+        modify: true,
       }
+
       queryClient.setQueryData([NOTES, activeNoteId], newNote);
 
-      setIsChange(true);
+
+      let noteList = queryClient.getQueryData([NOTES]);
+      noteList = noteList.map(note => {
+        if (note.id === activeNoteId) {
+          return {
+            ...note,
+            title: title,
+            content: quill.getContents(),
+            updateTime: moment(),
+            modify: true,
+          }
+        }
+
+        return note;
+      });
+      queryClient.setQueryData([NOTES], noteList);
 
       // debounceUpdate(newNote);
     }
@@ -396,7 +422,7 @@ const Detail = (props) => {
     <div id="editor-container" ref={quillRef}></div>
     <SaveBtn
       size="small"
-      disabled={!isChange}
+      disabled={!curNote?.modify}
       onClick={handleSaveNote}
     >save</SaveBtn>
   </DetailContainer>
