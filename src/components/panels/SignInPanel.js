@@ -5,8 +5,8 @@ import styled from "styled-components";
 import md5 from "md5";
 
 const Container = styled.div`
-  width: 300px;
-  margin: 20px auto;
+	width: 300px;
+	margin: 20px auto;
 `;
 
 const Title = styled.div`
